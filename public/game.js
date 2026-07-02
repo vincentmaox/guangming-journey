@@ -1127,20 +1127,27 @@ const Game = {
   soloPerformAction(unitId, action) {
     const battle = this.soloBattle;
     if (!battle) return;
-    if (battle._animLock) return; // 动画播放中禁止新行动
+    if (battle._animLock) { console.warn('[soloPerformAction] animLock is true, ignoring action'); return; }
 
     const unit = battle.units.find(u => u.id === unitId);
-    if (!unit || unit.hp <= 0) return;
+    if (!unit || unit.hp <= 0) { console.warn('[soloPerformAction] unit not found or dead', unitId); return; }
 
     const pending = battle.pendingAction;
-    if (!pending || pending.unitId !== unitId) return;
+    if (!pending || pending.unitId !== unitId) { console.warn('[soloPerformAction] pending mismatch', pending, unitId); return; }
 
     // 锁定动画
     battle._animLock = true;
 
-    // 收集动画事件
-    const animEvents = []; // {type, targetId, value, ...}
+    // 收集动画事件（声明在try外，确保catch后仍可访问）
+    const animEvents = [];
     let logMsg = '';
+    let skillAnim = null;
+    let isUltimateAction = false;
+    let skill = null; // 技能对象，声明在这里以便动画代码访问
+
+    // 使用安全包裹，确保任何JS错误都不会导致死锁
+    let actionError = null;
+    try {
     const elMult = (atkEl, defEl) => {
       const chart = { metal: 'wood', wood: 'earth', earth: 'water', water: 'fire', fire: 'metal' };
       if (!atkEl || !defEl) return 1;
@@ -1186,9 +1193,6 @@ const Game = {
     const addDebuffEvent = (targetId, debuffType) => {
       animEvents.push({ kind: 'debuff', targetId, debuffType });
     };
-
-    let skillAnim = null;
-    let isUltimateAction = false;
 
     // 怒气辅助函数（solo模式）
     const addRageSolo = (u, amt) => { if (u) u.rage = Math.min(u.maxRage || 100, (u.rage || 0) + amt); };
@@ -1257,7 +1261,7 @@ const Game = {
         }
       }
     } else if (action.type === 'skill') {
-      let skill = null;
+      skill = null;
       isUltimateAction = !!action.isUltimate;
       if (unit.isPlayer) {
         const heroData = this.heroes.find(h => h.id === unit.heroId);
@@ -1470,11 +1474,19 @@ const Game = {
       }
     }, 280);
 
+    } catch (err) {
+      console.error('[soloPerformAction] Error executing action:', err, action);
+      actionError = err;
+      logMsg = `${unit.name} 行动出错了！`;
+      if (logMsg) battle.log.push(logMsg);
+    }
+
     // 3. 动画播放完毕后，更新UI并推进回合
     const spd = SettingsSystem.data.battleSpeed || 1;
     const transformDelay = (battle.transformations?.length || 0) * 400 + 800;
-    const totalAnimTime = (280 + animEvents.length * 80 + 500 + transformDelay) / spd;
+    const totalAnimTime = (280 + (animEvents?.length || 0) * 80 + 500 + transformDelay) / spd;
     setTimeout(() => {
+      try {
       battle.pendingAction = null;
 
       const alivePlayers = battle.units.filter(u => u.isPlayer && u.hp > 0);
@@ -1489,6 +1501,13 @@ const Game = {
       this.updateBattle();
       battle._animLock = false;
       setTimeout(() => this.soloNextTurn(), 300 / SettingsSystem.data.battleSpeed);
+      } catch (err2) {
+        console.error('[soloPerformAction] Error in animation complete:', err2);
+        battle._animLock = false;
+        battle.pendingAction = null;
+        this.updateBattle();
+        setTimeout(() => this.soloNextTurn(), 500);
+      }
     }, totalAnimTime);
   },
 

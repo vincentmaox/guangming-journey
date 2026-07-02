@@ -973,6 +973,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('battleAction', (payload = {}, ack = () => {}) => {
+    try {
     const room = getRoom(socket);
     if (!room || !room.battle) return ack({ ok: false, error: '不在战斗中' });
     const battle = room.battle; const pending = battle.pendingAction;
@@ -1002,6 +1003,21 @@ io.on('connection', (socket) => {
       } else if (payload.type === 'item') { if (!target.isPlayer || target.hp <= 0) return ack({ ok: false, error: '只能对存活队友使用道具' }); }
     }
     performAction(room, pending.unitId, payload); ack({ ok: true });
+    } catch (err) {
+      console.error('[battleAction] Error processing action:', err, payload);
+      ack({ ok: false, error: '行动处理出错：' + (err.message || '未知错误') });
+      // 尝试推进回合避免卡住
+      try {
+        const room = getRoom(socket);
+        if (room?.battle) {
+          const battle = room.battle;
+          battle.pendingAction = null;
+          if (room.turnTimer) clearTimeout(room.turnTimer);
+          battle.turn = (battle.turn + 1) % battle.units.length;
+          startTurn(room);
+        }
+      } catch (e) { console.error('[battleAction] Recovery failed:', e); }
+    }
   });
 
   socket.on('nextLevel', (_p = {}, ack = () => {}) => {

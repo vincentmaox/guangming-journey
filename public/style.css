@@ -826,15 +826,16 @@ button:active { transform: translateY(1px); }
 }
 
 .action-buttons {
-  display: flex; gap: 8px; justify-content: center;
+  display: flex; gap: 5px; justify-content: center;
   flex-wrap: wrap;
 }
 
 .action-btn {
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  min-width: 80px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  min-width: 60px;
+  white-space: nowrap;
 }
 .action-btn.attack { background: linear-gradient(135deg, #e8506b, #c9304b); color: #fff; }
 .action-btn.skill { background: linear-gradient(135deg, #4a9eff, #2d7dd2); color: #fff; }
@@ -845,10 +846,11 @@ button:active { transform: translateY(1px); }
 .skill-btn {
   display: flex; flex-direction: column;
   align-items: center;
-  padding: 8px 12px;
-  font-size: 0.8rem;
+  padding: 6px 8px;
+  font-size: 0.72rem;
   position: relative;
   overflow: hidden;
+  line-height: 1.2;
 }
 .skill-btn::before {
   content: '';
@@ -1617,6 +1619,64 @@ button:active { transform: translateY(1px); }
 }
 .chat-input button:hover {
   opacity: 0.9;
+}
+
+/* ===== 桌面版战斗模式：聊天窗口移到右上角避免遮挡操作区 ===== */
+body.on-battle .chat-panel {
+  bottom: auto !important;
+  top: 50px !important;
+  right: 12px !important;
+  width: 40px !important;
+  height: 40px !important;
+  max-height: 40px !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+}
+body.on-battle .chat-panel .chat-header {
+  padding: 0 !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.1rem !important;
+  cursor: pointer !important;
+}
+body.on-battle .chat-panel .chat-header span:first-child {
+  font-size: 1.1rem !important;
+}
+body.on-battle .chat-panel .chat-header span:not(:first-child),
+body.on-battle .chat-panel .chat-badge {
+  display: none !important;
+}
+body.on-battle .chat-panel .chat-body {
+  display: none !important;
+}
+body.on-battle .chat-panel:not(.collapsed) {
+  width: 280px !important;
+  height: auto !important;
+  max-height: 50vh !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+body.on-battle .chat-panel:not(.collapsed) .chat-header {
+  padding: 10px 14px !important;
+  height: auto !important;
+  font-size: 0.9rem !important;
+  justify-content: space-between !important;
+}
+body.on-battle .chat-panel:not(.collapsed) .chat-header span:first-child {
+  font-size: 0.9rem !important;
+}
+body.on-battle .chat-panel:not(.collapsed) .chat-header span:not(:first-child),
+body.on-battle .chat-panel:not(.collapsed) .chat-badge {
+  display: inline !important;
+}
+body.on-battle .chat-panel:not(.collapsed) .chat-body {
+  display: flex !important;
+}
+body.on-battle .chat-panel .chat-messages {
+  max-height: calc(50vh - 100px) !important;
 }
 
 /* ===== 响应式 - 手机竖屏适配 ===== */
