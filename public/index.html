@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>光明西游·攻略记</title>
+  <meta name="description" content="深圳光明区多人协作回合制RPG游戏，探索虹桥公园、科技馆、美术馆、回归亭、光明侨院，组团完成光明攻略！" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="光明西游·攻略记" />
+  <meta property="og:description" content="深圳光明区多人协作回合制RPG，组团攻略光明五大景点！" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E⚔️%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css?v=7" />
+</head>
+<body>
+  <!-- 标题画面 -->
+  <main id="titleScreen" class="screen title-screen">
+    <div class="title-bg">
+      <img src="assets/backgrounds/title-screen.jpg" alt="光明西游攻略记" />
+      <div class="title-overlay"></div>
+    </div>
+    <div class="title-content">
+      <h1 class="game-title">光明西游·攻略记</h1>
+      <p class="game-subtitle">深圳光明区多人协作回合制RPG</p>
+      <div class="title-buttons">
+        <button id="btnSolo" class="btn-primary">单人试玩</button>
+        <button id="btnCreateRoom" class="btn-primary">创建房间</button>
+      </div>
+      <div class="join-box">
+        <input id="inputRoomCode" maxlength="4" placeholder="输入房号" />
+        <button id="btnJoinRoom" class="btn-secondary">加入房间</button>
+      </div>
+      <p class="input-hint">输入昵称：<input id="inputName" maxlength="10" placeholder="玩家昵称" value="" /></p>
+      <p id="errorMsg" class="error-text"></p>
+    </div>
+  </main>
+
+  <!-- 角色选择 -->
+  <section id="heroSelectScreen" class="screen hidden">
+    <div class="screen-header">
+      <span>房号：<b id="heroRoomCode">----</b></span>
+      <span id="heroPlayerCount">1/4</span>
+    </div>
+    <h2 class="screen-title">选择你的英雄</h2>
+    <div id="heroGuide" class="hero-guide">
+      <span class="guide-step active">1. 选角色</span>
+      <span class="guide-arrow">&rarr;</span>
+      <span class="guide-step">2. 点准备</span>
+      <span class="guide-arrow">&rarr;</span>
+      <span class="guide-step">3. 房主开始</span>
+    </div>
+    <div id="heroGrid" class="hero-grid"></div>
+    <div class="hero-detail" id="heroDetail"></div>
+    <div class="screen-actions">
+      <button id="btnHeroReady" class="btn-primary">准备就绪</button>
+      <button id="btnHeroLeave" class="btn-ghost">离开</button>
+    </div>
+    <div id="heroPlayers" class="player-list"></div>
+  </section>
+
+  <!-- 关卡地图（像素风探索地图） -->
+  <section id="mapScreen" class="screen hidden">
+    <div class="screen-header">
+      <span>房号：<b id="mapRoomCode">----</b></span>
+      <div class="map-header-actions">
+        <button id="btnSettings" class="btn-small">⚙️ 设置</button>
+        <button id="btnCollection" class="btn-small">📖 图鉴</button>
+        <button id="btnMapLeave" class="btn-small">离开</button>
+      </div>
+    </div>
+    <h2 class="screen-title map-world-title">光明幻境地图</h2>
+    <div class="world-map-container">
+      <div class="world-map-bg" id="worldMapBg">
+        <img src="assets/backgrounds/world-map.jpg" alt="光明区地图" usemap="#worldmap" />
+        <!-- 景点标记点 -->
+        <div class="map-markers" id="mapMarkers"></div>
+        <!-- 路径连线 -->
+        <svg class="map-paths" id="mapPaths" viewBox="0 0 1000 562" preserveAspectRatio="none"></svg>
+        <!-- 玩家角色 -->
+        <div class="map-player" id="mapPlayer">
+          <div class="map-player-sprite"></div>
+        </div>
+      </div>
+      <!-- 景点信息浮窗 -->
+      <div class="map-tooltip hidden" id="mapTooltip">
+        <div class="map-tooltip-header">
+          <div class="map-tooltip-icon" id="tooltipIcon"></div>
+          <div class="map-tooltip-info">
+            <div class="map-tooltip-name" id="tooltipName"></div>
+            <div class="map-tooltip-desc" id="tooltipDesc"></div>
+          </div>
+        </div>
+        <div class="map-tooltip-status" id="tooltipStatus"></div>
+        <button class="map-tooltip-btn hidden" id="tooltipEnter">进入挑战</button>
+      </div>
+    </div>
+    <div id="mapTip" class="map-tip">点击地图上的景点开始攻略！通关后解锁下一个地点</div>
+  </section>
+
+  <!-- 景点图鉴 -->
+  <div id="collectionOverlay" class="collection-overlay hidden">
+    <div class="collection-panel" style="max-width: 800px;">
+      <div class="collection-header">
+        <h2>📖 光明文旅图鉴</h2>
+        <button id="btnCloseCollection" class="btn-small">关闭</button>
+      </div>
+      <div class="collection-tabs">
+        <button class="collection-tab active" data-tab="spots">🏞️ 景点</button>
+        <button class="collection-tab" data-tab="souvenirs">🎁 纪念品 <span id="souvenirCount" class="tab-count">0/5</span></button>
+      </div>
+      <div class="collection-progress">
+        已解锁 <span id="collectionCount">0</span> / <span id="collectionTotal">0</span>
+      </div>
+      <div id="collectionGrid" class="collection-grid"></div>
+      <div id="souvenirGrid" class="souvenir-grid hidden"></div>
+    </div>
+  </div>
+
+  <!-- 设置面板 -->
+  <div id="settingsOverlay" class="collection-overlay hidden">
+    <div class="collection-panel" style="max-width: 500px;">
+      <div class="collection-header">
+        <h2>⚙️ 游戏设置</h2>
+        <button id="btnCloseSettings" class="btn-small">关闭</button>
+      </div>
+      <div style="padding: 24px;">
+        <div class="setting-item">
+          <div class="setting-label">🎵 背景音乐</div>
+          <div class="setting-control">
+            <input type="range" id="settingBgmVolume" min="0" max="100" value="30" />
+            <span id="settingBgmValue">30%</span>
+          </div>
+        </div>
+        <div class="setting-item">
+          <div class="setting-label">🔊 游戏音效</div>
+          <div class="setting-control">
+            <input type="range" id="settingSfxVolume" min="0" max="100" value="70" />
+            <span id="settingSfxValue">70%</span>
+          </div>
+        </div>
+        <div class="setting-item">
+          <div class="setting-label">⚡ 战斗速度</div>
+          <div class="setting-control">
+            <select id="settingBattleSpeed">
+              <option value="1">1x 正常</option>
+              <option value="1.5">1.5x 较快</option>
+              <option value="2">2x 快速</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-item">
+          <div class="setting-label">📖 自动播放剧情</div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="settingAutoStory" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-item">
+          <div class="setting-label">🤖 自动战斗</div>
+          <div class="setting-control">
+            <label class="switch">
+              <input type="checkbox" id="settingAutoBattle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 战斗画面 -->
+  <section id="battleScreen" class="screen hidden">
+    <div class="battle-bg" id="battleBg"></div>
+    <div class="battle-overlay"></div>
+    <div class="battle-ui">
+      <div class="battle-header">
+        <span id="battleLevelName">关卡名</span>
+        <span id="battleTurn">第1回合</span>
+      </div>
+      <div class="battle-arena">
+        <div class="battle-side battle-enemies" id="battleEnemies"></div>
+        <div class="battle-vs">VS</div>
+        <div class="battle-side battle-players" id="battlePlayers"></div>
+        <div class="skill-effect-layer" id="skillEffectLayer"></div>
+      </div>
+      <div class="battle-log" id="battleLog"></div>
+      <div class="battle-actions" id="battleActions">
+        <p class="turn-hint" id="turnHint">等待中...</p>
+        <div class="action-buttons" id="actionButtons"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 战斗结果 -->
+  <section id="resultScreen" class="screen hidden">
+    <div class="result-bg">
+      <div class="result-card">
+        <h2 id="resultTitle">战斗胜利！</h2>
+        <p id="resultDesc">获得经验与金币</p>
+        <div id="resultRewards" class="rewards"></div>
+        <div class="result-actions">
+          <button id="btnNextLevel" class="btn-primary">继续攻略</button>
+          <button id="btnRetry" class="btn-secondary" style="display:none">重新挑战</button>
+          <button id="btnResultLeave" class="btn-ghost">返回地图</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 通关宝箱 -->
+  <div id="treasureOverlay" class="treasure-overlay hidden">
+    <div class="treasure-particles" id="treasureParticles"></div>
+    <div class="treasure-box-container" id="treasureBoxContainer">
+      <div class="treasure-box" id="treasureBox">
+        <div class="treasure-chest">
+          <div class="chest-lid"></div>
+          <div class="chest-body"></div>
+          <div class="chest-lock"></div>
+        </div>
+        <div class="treasure-shine hidden" id="treasureShine"></div>
+      </div>
+      <div class="treasure-item hidden" id="treasureItem">
+        <div class="treasure-item-glow"></div>
+        <div class="treasure-rewards" id="treasureRewards"></div>
+        <div class="treasure-item-icon" id="treasureItemIcon"></div>
+        <div class="treasure-item-rarity" id="treasureItemRarity"></div>
+        <div class="treasure-item-name" id="treasureItemName"></div>
+        <div class="treasure-item-tag" id="treasureItemTag"></div>
+        <div class="treasure-item-desc" id="treasureItemDesc"></div>
+        <div class="treasure-item-photo" id="treasureItemPhoto"></div>
+        <div class="treasure-item-buff" id="treasureItemBuff"></div>
+        <button class="treasure-collect-btn" id="btnCollectTreasure">✨ 收入图鉴 ✨</button>
+      </div>
+    </div>
+    <div class="treasure-hint" id="treasureHint">点击宝箱开启...</div>
+  </div>
+
+  <!-- 剧情对话（带剧情插图） -->
+  <div id="dialogOverlay" class="dialog-overlay hidden" data-scene="prologue">
+    <div class="dialog-scene" id="dialogScene">
+      <!-- 剧情插图背景 -->
+      <img class="dialog-cutscene-img" id="dialogCutsceneImg" src="" alt="" />
+      <div class="dialog-ambient left" id="dialogAmbientLeft"></div>
+      <div class="dialog-ambient right" id="dialogAmbientRight"></div>
+      <div class="dialog-particles" id="dialogParticles"></div>
+      <!-- 地图点亮动画容器 -->
+      <div class="map-lighting hidden" id="mapLighting">
+        <div class="map-lighting-map">
+          <img src="assets/backgrounds/world-map.jpg" alt="光明区地图" class="map-lighting-img" />
+          <div class="map-lighting-overlay"></div>
+          <div class="map-lighting-locs">
+            <div class="map-loc" data-loc="0" style="left:12%;top:55%"><span class="loc-glow"></span><span class="loc-dot"></span><span class="loc-name">虹桥公园</span></div>
+            <div class="map-loc" data-loc="1" style="left:33%;top:20%"><span class="loc-glow"></span><span class="loc-dot"></span><span class="loc-name">光明科技馆</span></div>
+            <div class="map-loc" data-loc="2" style="left:50%;top:52%"><span class="loc-glow"></span><span class="loc-dot"></span><span class="loc-name">文化艺术中心</span></div>
+            <div class="map-loc" data-loc="3" style="left:78%;top:25%"><span class="loc-glow"></span><span class="loc-dot"></span><span class="loc-name">回归亭</span></div>
+            <div class="map-loc" data-loc="4" style="left:83%;top:73%"><span class="loc-glow"></span><span class="loc-dot"></span><span class="loc-name">光明侨院</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-chapter hidden" id="dialogChapter">
+        <div class="dialog-chapter-line"></div>
+        <div class="dialog-chapter-title" id="dialogChapterTitle"></div>
+        <div class="dialog-chapter-subtitle" id="dialogChapterSubtitle"></div>
+        <div class="dialog-chapter-line"></div>
+      </div>
+      <div class="dialog-character-left" id="dialogCharLeft"></div>
+      <div class="dialog-character-right" id="dialogCharRight"></div>
+    </div>
+    <div class="dialog-box">
+      <div class="dialog-name" id="dialogName"></div>
+      <div class="dialog-text" id="dialogText"></div>
+      <div class="dialog-hint">点击继续 ▶</div>
+    </div>
+  </div>
+
+  <!-- 光明荣誉市民庆祝画面 -->
+  <div id="honorScreen" class="honor-screen hidden">
+    <div class="honor-particles" id="honorParticles"></div>
+    <div class="honor-rays"></div>
+    <div class="honor-content">
+      <div class="honor-team" id="honorTeam"></div>
+      <div class="honor-title">攻略成功！</div>
+      <div class="honor-subtitle">光明，感谢你！</div>
+      <div class="honor-certificate">
+        <div class="cert-border">
+          <div class="cert-inner">
+            <div class="cert-seal">🏅</div>
+            <div class="cert-title">光明荣誉市民</div>
+            <div class="cert-names" id="certNames"></div>
+            <div class="cert-desc">授予光明西游小队全体成员<br>感谢你们拯救了光明幻境<br>光明，等你来发现</div>
+            <div class="cert-stamp">光明区<br>荣誉认证</div>
+          </div>
+        </div>
+      </div>
+      <button class="honor-btn" id="btnHonorReturn">✨ 返回开始 ✨</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- 全局聊天面板 -->
+  <div id="chatPanel" class="chat-panel collapsed">
+    <div class="chat-header" id="chatToggle">
+      <span>💬 聊天</span>
+      <span class="chat-badge" id="chatBadge" style="display:none">0</span>
+    </div>
+    <div class="chat-body">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input">
+        <input type="text" id="chatInput" maxlength="100" placeholder="说点什么..." />
+        <button id="chatSend">发送</button>
+      </div>
+    </div>
+  </div>
+  <script src="gamedata.js?v=2"></script>
+  <script src="socket.io/socket.io.js"></script>
+  <script src="chiptune.js?v=1"></script>
+  <script src="story.js?v=4"></script>
+  <script src="game.js?v=13"></script>
+</body>
+</html>

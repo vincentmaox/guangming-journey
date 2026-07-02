@@ -1,0 +1,10 @@
+node_modules/
+dist-upload/
+备份/
+submission/
+*.zip
+*.log
+.DS_Store
+.env
+.env.local
+npm-debug.log*

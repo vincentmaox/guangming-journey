@@ -1,0 +1,83 @@
+[
+  {
+    "id": "hongqiao",
+    "name": "虹桥公园",
+    "index": 0,
+    "background": "assets/backgrounds/level1-hongqiao.jpg",
+    "bgm": "hongqiao",
+    "description": "穿越光明虹桥公园的红色空中栈道，击败捣乱的公园精灵。",
+    "enemies": [
+      { "id": "e1", "name": "花叶精灵", "type": "park-spirit", "element": "wood", "hp": 60, "mp": 30, "atk": 18, "def": 10, "spd": 20, "img": "assets/enemies/pixel-park-spirit.jpg",
+        "skills": [{ "name": "藤蔓缠绕", "mp": 15, "type": "debuff", "debuff": "spdDown", "value": 0.3, "turns": 2, "target": "single", "desc": "降低目标速度30%", "anim": "vine_bind" }] },
+      { "id": "e2", "name": "荆棘精灵", "type": "park-spirit", "element": "wood", "hp": 70, "mp": 30, "atk": 22, "def": 12, "spd": 16, "img": "assets/enemies/pixel-park-spirit.jpg",
+        "skills": [{ "name": "荆棘突刺", "mp": 20, "type": "dmg", "multiplier": 1.5, "target": "single", "desc": "造成150%物理伤害", "anim": "thorn_strike" }] }
+    ],
+    "reward": { "exp": 50, "gold": 30 }
+  },
+  {
+    "id": "science",
+    "name": "科技馆",
+    "index": 1,
+    "background": "assets/backgrounds/level2-museum.jpg",
+    "bgm": "science",
+    "description": "闯入光明科技馆，面对失控的科技守卫。",
+    "enemies": [
+      { "id": "e1", "name": "守卫机器人", "type": "robot", "element": "metal", "hp": 85, "mp": 40, "atk": 25, "def": 22, "spd": 14, "img": "assets/enemies/pixel-robot.jpg",
+        "skills": [{ "name": "激光扫射", "mp": 20, "type": "dmg", "multiplier": 1.4, "target": "single", "desc": "造成140%伤害", "anim": "laser_beam" }] },
+      { "id": "e2", "name": "巡逻无人机", "type": "robot", "element": "metal", "hp": 50, "mp": 50, "atk": 28, "def": 8, "spd": 28, "img": "assets/enemies/pixel-robot.jpg",
+        "skills": [{ "name": "电磁脉冲", "mp": 25, "type": "debuff", "debuff": "atkDown", "value": 0.3, "turns": 2, "target": "allEnemy", "desc": "降低全体敌人攻击力30%", "anim": "emp_pulse" }] },
+      { "id": "e3", "name": "核心守卫", "type": "robot", "element": "metal", "hp": 95, "mp": 40, "atk": 27, "def": 20, "spd": 12, "img": "assets/enemies/pixel-robot.jpg",
+        "skills": [{ "name": "护盾激活", "mp": 30, "type": "buff", "buff": "defUp", "value": 0.4, "turns": 3, "target": "self", "desc": "防御+40%持续3回合", "anim": "shield_up" }] }
+    ],
+    "reward": { "exp": 80, "gold": 50 }
+  },
+  {
+    "id": "artgallery",
+    "name": "光明文化艺术中心",
+    "index": 2,
+    "background": "assets/backgrounds/level3-artgallery.jpg",
+    "bgm": "artgallery",
+    "description": "白色拱门中的画作活了过来，击败墨怪守护艺术殿堂。",
+    "enemies": [
+      { "id": "e1", "name": "墨怪·山水", "type": "ink-monster", "element": "water", "hp": 105, "mp": 60, "atk": 32, "def": 16, "spd": 18, "img": "assets/enemies/pixel-ink-monster.jpg",
+        "skills": [{ "name": "墨瀑倾泻", "mp": 25, "type": "dmg", "multiplier": 1.6, "target": "single", "desc": "造成160%法术伤害", "anim": "ink_splash" }] },
+      { "id": "e2", "name": "墨怪·花鸟", "type": "ink-monster", "element": "water", "hp": 90, "mp": 60, "atk": 28, "def": 14, "spd": 22, "img": "assets/enemies/pixel-ink-monster.jpg",
+        "skills": [{ "name": "幻墨迷阵", "mp": 30, "type": "debuff", "debuff": "stun", "chance": 0.4, "turns": 1, "target": "single", "desc": "40%概率眩晕目标1回合", "anim": "ink_confuse" }] }
+    ],
+    "reward": { "exp": 100, "gold": 60 }
+  },
+  {
+    "id": "pavilion",
+    "name": "回归亭",
+    "index": 3,
+    "background": "assets/backgrounds/level4-pavilion.jpg",
+    "bgm": "pavilion",
+    "description": "攀登回归亭，面对守护历史的石狮子与古守卫。",
+    "enemies": [
+      { "id": "e1", "name": "石狮守卫", "type": "stone-lion", "element": "earth", "hp": 120, "mp": 30, "atk": 35, "def": 32, "spd": 10, "img": "assets/enemies/pixel-stone-lion.jpg",
+        "skills": [{ "name": "碎石践踏", "mp": 20, "type": "dmg", "multiplier": 1.3, "target": "single", "desc": "造成130%伤害", "anim": "rock_smash" }] },
+      { "id": "e2", "name": "亭灵", "type": "stone-lion", "element": "earth", "hp": 90, "mp": 80, "atk": 28, "def": 18, "spd": 20, "img": "assets/enemies/pixel-stone-lion.jpg",
+        "skills": [{ "name": "石化凝视", "mp": 25, "type": "debuff", "debuff": "stun", "chance": 0.35, "turns": 1, "target": "single", "desc": "35%概率眩晕目标", "anim": "stone_gaze" }] },
+      { "id": "e3", "name": "古守卫", "type": "stone-lion", "element": "earth", "hp": 110, "mp": 40, "atk": 32, "def": 28, "spd": 12, "img": "assets/enemies/pixel-stone-lion.jpg",
+        "skills": [{ "name": "岩壁守护", "mp": 25, "type": "buff", "buff": "defUp", "value": 0.5, "turns": 2, "target": "all", "desc": "全体防御+50%", "anim": "wall_stone" }] }
+    ],
+    "reward": { "exp": 130, "gold": 80 }
+  },
+  {
+    "id": "qiaoyuan",
+    "name": "光明侨院",
+    "index": 4,
+    "background": "assets/backgrounds/level5-qiaoyuan.jpg",
+    "bgm": "boss",
+    "description": "最终决战！击败侨院之主，完成光明攻略！",
+    "enemies": [
+      { "id": "e1", "name": "侨院之主", "type": "boss", "element": "earth", "hp": 380, "mp": 160, "atk": 45, "def": 28, "spd": 15, "img": "assets/enemies/pixel-boss-qiaoyuan.jpg",
+        "skills": [
+          { "name": "先祖之怒", "mp": 40, "type": "dmg", "multiplier": 2.0, "target": "single", "desc": "造成200%伤害", "anim": "ancestor_wrath" },
+          { "name": "召唤先灵", "mp": 50, "type": "heal", "heal": 80, "target": "self", "desc": "恢复80HP", "anim": "spirit_heal" },
+          { "name": "禁锢令", "mp": 35, "type": "debuff", "debuff": "stun", "chance": 0.5, "turns": 1, "target": "single", "desc": "50%概率眩晕目标", "anim": "imprison" }
+        ] }
+    ],
+    "reward": { "exp": 300, "gold": 200 }
+  }
+]
