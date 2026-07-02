@@ -491,6 +491,285 @@ button:active { transform: translateY(1px); }
   line-height: 12px;
 }
 
+/* ===== 怒气条 ===== */
+.unit-rage-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(0,0,0,0.5);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255,165,0,0.3);
+  margin-top: 3px;
+  box-shadow: 0 0 0 rgba(255,100,0,0);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+.unit-rage-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ff8c00, #ffaa00, #ffd700);
+  transition: width 0.4s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.unit-rage-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.9);
+  line-height: 10px;
+  letter-spacing: 1px;
+}
+.unit-rage-bar.rage-full {
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255,215,0,0.7), 0 0 20px rgba(255,100,0,0.4);
+  animation: rageFullPulse 0.8s ease-in-out infinite alternate;
+}
+.unit-rage-bar.rage-full .unit-rage-fill {
+  background: linear-gradient(90deg, #ff4500, #ffd700, #ff4500);
+  animation: rageFullGlow 0.5s linear infinite;
+  background-size: 200% 100%;
+}
+.unit-rage-bar.rage-full .unit-rage-text {
+  color: #fff;
+  text-shadow: 0 0 8px #ff6b00, 1px 1px 0 #000;
+  animation: rageTextBlink 0.4s ease-in-out infinite alternate;
+}
+@keyframes rageFullPulse {
+  0% { box-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 15px rgba(255,100,0,0.3); }
+  100% { box-shadow: 0 0 14px rgba(255,215,0,0.9), 0 0 28px rgba(255,100,0,0.6); }
+}
+@keyframes rageFullGlow {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes rageTextBlink {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+/* 怒气满时单位整体发光 */
+.battle-unit.rage-full {
+  box-shadow: 0 0 0 2px rgba(255,165,0,0.6), 0 0 15px rgba(255,100,0,0.4);
+  animation: rageUnitGlow 1s ease-in-out infinite alternate;
+}
+@keyframes rageUnitGlow {
+  0% { box-shadow: 0 0 0 2px rgba(255,165,0,0.5), 0 0 12px rgba(255,100,0,0.3); }
+  100% { box-shadow: 0 0 0 2px rgba(255,215,0,0.8), 0 0 22px rgba(255,140,0,0.6); }
+}
+
+/* ===== 必杀技按钮 ===== */
+.ultimate-btn {
+  background: linear-gradient(135deg, #ff4500, #ff8c00, #ffd700) !important;
+  border-color: #ffd700 !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+  animation: ultimateBtnPulse 0.6s ease-in-out infinite alternate;
+  position: relative;
+  overflow: hidden;
+}
+.ultimate-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 100%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: ultimateShine 2s linear infinite;
+}
+@keyframes ultimateBtnPulse {
+  0% { box-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 16px rgba(255,69,0,0.3); transform: scale(1); }
+  100% { box-shadow: 0 0 16px rgba(255,215,0,0.9), 0 0 32px rgba(255,69,0,0.6); transform: scale(1.04); }
+}
+@keyframes ultimateShine {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+.rage-cost {
+  color: #fff !important;
+  background: rgba(0,0,0,0.3) !important;
+  text-shadow: 0 0 4px #ff6b00;
+}
+
+/* ===== Boss单位标识 ===== */
+.battle-unit.boss-unit {
+  border: 2px solid rgba(255,50,50,0.5);
+  background: linear-gradient(180deg, rgba(80,20,20,0.3), rgba(40,10,10,0.5));
+}
+.boss-crown {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.1rem;
+  filter: drop-shadow(0 0 4px #ffd700);
+  z-index: 6;
+  animation: crownFloat 1.5s ease-in-out infinite alternate;
+}
+@keyframes crownFloat {
+  0% { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-3px); }
+}
+.boss-tag {
+  display: inline-block;
+  font-size: 0.55rem;
+  background: linear-gradient(90deg, #ff4500, #c0392b);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: 4px;
+  font-weight: 900;
+  vertical-align: middle;
+  text-shadow: none;
+  letter-spacing: 1px;
+}
+/* Boss阶段外观 */
+.battle-unit.phase-phase2 {
+  border-color: rgba(255,107,107,0.7) !important;
+  box-shadow: 0 0 12px rgba(255,107,107,0.4);
+}
+.battle-unit.phase-phase2 .unit-img img {
+  filter: hue-rotate(-15deg) saturate(1.3) drop-shadow(0 0 6px rgba(255,50,50,0.6));
+}
+.battle-unit.phase-phase3 {
+  border-color: rgba(155,89,182,0.8) !important;
+  box-shadow: 0 0 18px rgba(155,89,182,0.5), 0 0 30px rgba(255,0,100,0.3);
+  animation: bossPhase3Aura 1.2s ease-in-out infinite alternate;
+}
+.battle-unit.phase-phase3 .unit-img img {
+  filter: hue-rotate(60deg) saturate(1.6) brightness(1.15) drop-shadow(0 0 10px rgba(155,89,182,0.8));
+}
+@keyframes bossPhase3Aura {
+  0% { box-shadow: 0 0 14px rgba(155,89,182,0.5), 0 0 24px rgba(255,0,100,0.3); }
+  100% { box-shadow: 0 0 22px rgba(155,89,182,0.8), 0 0 40px rgba(255,0,100,0.6); }
+}
+.battle-unit.transforming {
+  animation: bossTransform 1s ease-out;
+}
+@keyframes bossTransform {
+  0% { transform: scale(1); filter: brightness(1); }
+  30% { transform: scale(1.15); filter: brightness(3) saturate(0); }
+  60% { transform: scale(0.95); filter: brightness(2.5) hue-rotate(180deg); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* ===== Boss变身特效 ===== */
+.transform-ring {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 4px solid #ff6b6b;
+  box-shadow: 0 0 30px #ff6b6b, inset 0 0 30px rgba(255,107,107,0.5);
+  pointer-events: none;
+  z-index: 60;
+  animation: transformRingExpand 1.5s ease-out forwards;
+}
+@keyframes transformRingExpand {
+  0% { width: 40px; height: 40px; opacity: 1; border-width: 8px; }
+  60% { width: 160px; height: 160px; opacity: 0.9; border-width: 3px; }
+  100% { width: 220px; height: 220px; opacity: 0; border-width: 1px; }
+}
+.transform-pillar {
+  position: absolute;
+  width: 80px;
+  height: 300px;
+  pointer-events: none;
+  z-index: 55;
+  border-radius: 40px 40px 0 0;
+  transform-origin: bottom center;
+  animation: transformPillarRise 1.2s ease-out forwards;
+}
+.transform-pillar.phase-2 {
+  background: linear-gradient(180deg, transparent, rgba(255,107,107,0.8), rgba(255,50,50,0.6));
+  box-shadow: 0 0 40px rgba(255,107,107,0.8);
+}
+.transform-pillar.phase-3 {
+  background: linear-gradient(180deg, transparent, rgba(155,89,182,0.9), rgba(255,0,100,0.7));
+  box-shadow: 0 0 50px rgba(155,89,182,0.9);
+}
+@keyframes transformPillarRise {
+  0% { height: 0; opacity: 0; }
+  30% { height: 300px; opacity: 1; }
+  80% { height: 350px; opacity: 0.9; }
+  100% { height: 400px; opacity: 0; }
+}
+
+/* ===== AoE群体受击特效 ===== */
+.aoe-charge {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,200,0,0.5), transparent);
+  pointer-events: none;
+  z-index: 54;
+  animation: aoeCharge 0.6s ease-out forwards;
+}
+@keyframes aoeCharge {
+  0% { width: 10px; height: 10px; opacity: 0.8; transform: translate(-50%,-50%) scale(0.5); }
+  60% { width: 60px; height: 60px; opacity: 1; transform: translate(-50%,-50%) scale(1.2); }
+  100% { width: 80px; height: 80px; opacity: 0; transform: translate(-50%,-50%) scale(1.5); }
+}
+.aoe-wave {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 55;
+  transform: translate(-50%, -50%);
+  animation: aoeWaveExpand 0.8s ease-out forwards;
+}
+.aoe-wave.fire {
+  border: 3px solid #ff6b35;
+  box-shadow: 0 0 20px #ff6b35, inset 0 0 15px rgba(255,107,53,0.6);
+}
+.aoe-wave.water {
+  border: 3px solid #4fc3f7;
+  box-shadow: 0 0 20px #4fc3f7, inset 0 0 15px rgba(79,195,247,0.6);
+}
+.aoe-wave.earth {
+  border: 3px solid #8d6e63;
+  box-shadow: 0 0 20px #a1887f, inset 0 0 15px rgba(141,110,99,0.6);
+}
+.aoe-wave.metal {
+  border: 3px solid #ffd700;
+  box-shadow: 0 0 20px #ffd700, inset 0 0 15px rgba(255,215,0,0.6);
+}
+.aoe-wave.wood {
+  border: 3px solid #66bb6a;
+  box-shadow: 0 0 20px #66bb6a, inset 0 0 15px rgba(102,187,106,0.6);
+}
+.aoe-wave.default {
+  border: 3px solid #ffd93d;
+  box-shadow: 0 0 25px #ffd93d, inset 0 0 20px rgba(255,217,61,0.5);
+}
+@keyframes aoeWaveExpand {
+  0% { width: 30px; height: 30px; opacity: 1; }
+  100% { width: 350px; height: 350px; opacity: 0; }
+}
+
+/* ===== 必杀技全屏光效 ===== */
+.ultimate-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,200,0,0.3), transparent 60%);
+  pointer-events: none;
+  z-index: 68;
+  animation: ultimateOverlay 0.8s ease-out forwards;
+}
+@keyframes ultimateOverlay {
+  0% { opacity: 0; background: radial-gradient(circle at center, rgba(255,255,255,0.8), transparent 30%); }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .bar-text {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
@@ -1425,7 +1704,9 @@ button:active { transform: translateY(1px); }
   .unit-name { font-size: 0.8rem !important; gap: 3px !important; font-weight: 700 !important; }
   .unit-lv { font-size: 0.65rem !important; padding: 0 3px !important; }
   .unit-hp-bar, .unit-mp-bar { height: 8px !important; border-radius: 3px !important; border-width: 1px !important; }
+  .unit-rage-bar { height: 7px !important; border-radius: 3px !important; }
   .unit-hp-text, .unit-mp-text { font-size: 0.65rem !important; line-height: 8px !important; font-weight: 600 !important; text-shadow: 0 0 2px #000, 1px 1px 0 #000 !important; }
+  .unit-rage-text { font-size: 0.55rem !important; line-height: 7px !important; font-weight: 700 !important; }
   .unit-buffs { gap: 2px !important; margin-top: 1px !important; }
   .buff-icon, .debuff-icon { font-size: 0.75rem !important; }
 

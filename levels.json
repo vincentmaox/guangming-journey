@@ -58,8 +58,29 @@
         "skills": [{ "name": "碎石践踏", "mp": 20, "type": "dmg", "multiplier": 1.3, "target": "single", "desc": "造成130%伤害", "anim": "rock_smash" }] },
       { "id": "e2", "name": "亭灵", "type": "stone-lion", "element": "earth", "hp": 90, "mp": 80, "atk": 28, "def": 18, "spd": 20, "img": "assets/enemies/pixel-stone-lion.jpg",
         "skills": [{ "name": "石化凝视", "mp": 25, "type": "debuff", "debuff": "stun", "chance": 0.35, "turns": 1, "target": "single", "desc": "35%概率眩晕目标", "anim": "stone_gaze" }] },
-      { "id": "e3", "name": "古守卫", "type": "stone-lion", "element": "earth", "hp": 110, "mp": 40, "atk": 32, "def": 28, "spd": 12, "img": "assets/enemies/pixel-stone-lion.jpg",
-        "skills": [{ "name": "岩壁守护", "mp": 25, "type": "buff", "buff": "defUp", "value": 0.5, "turns": 2, "target": "all", "desc": "全体防御+50%", "anim": "wall_stone" }] }
+      { "id": "e3", "name": "古守卫", "type": "boss", "element": "earth", "hp": 200, "mp": 60, "atk": 30, "def": 30, "spd": 12, "img": "assets/enemies/pixel-stone-lion.jpg",
+        "skills": [
+          { "name": "岩壁守护", "mp": 25, "type": "buff", "buff": "defUp", "value": 0.5, "turns": 2, "target": "self", "desc": "自身防御+50%", "anim": "wall_stone" },
+          { "name": "碎石冲击", "mp": 20, "type": "dmg", "multiplier": 1.6, "target": "single", "desc": "造成160%伤害", "anim": "rock_smash" }
+        ],
+        "phases": [
+          {
+            "threshold": 0.5,
+            "name": "古守卫·觉醒",
+            "atkMult": 1.3,
+            "defMult": 1.2,
+            "spdBonus": 5,
+            "appearance": "phase2",
+            "announce": "古守卫觉醒了！防御力大幅提升！",
+            "color": "#c9a66b",
+            "heal": 30,
+            "clearDebuffs": true,
+            "newSkills": [
+              { "name": "落石阵", "mp": 35, "type": "dmg", "multiplier": 1.2, "target": "allEnemy", "desc": "召唤落石对全体敌人造成120%伤害", "anim": "rock_smash" }
+            ]
+          }
+        ]
+      }
     ],
     "reward": { "exp": 130, "gold": 80 }
   },
@@ -71,12 +92,46 @@
     "bgm": "boss",
     "description": "最终决战！击败侨院之主，完成光明攻略！",
     "enemies": [
-      { "id": "e1", "name": "侨院之主", "type": "boss", "element": "earth", "hp": 380, "mp": 160, "atk": 45, "def": 28, "spd": 15, "img": "assets/enemies/pixel-boss-qiaoyuan.jpg",
+      { "id": "e1", "name": "侨院之主", "type": "boss", "element": "earth", "hp": 450, "mp": 160, "atk": 48, "def": 30, "spd": 16, "img": "assets/enemies/pixel-boss-qiaoyuan.jpg",
         "skills": [
           { "name": "先祖之怒", "mp": 40, "type": "dmg", "multiplier": 2.0, "target": "single", "desc": "造成200%伤害", "anim": "ancestor_wrath" },
           { "name": "召唤先灵", "mp": 50, "type": "heal", "heal": 80, "target": "self", "desc": "恢复80HP", "anim": "spirit_heal" },
           { "name": "禁锢令", "mp": 35, "type": "debuff", "debuff": "stun", "chance": 0.5, "turns": 1, "target": "single", "desc": "50%概率眩晕目标", "anim": "imprison" }
-        ] }
+        ],
+        "phases": [
+          {
+            "threshold": 0.5,
+            "name": "侨院之主·真身",
+            "atkMult": 1.4,
+            "defMult": 1.2,
+            "spdBonus": 4,
+            "appearance": "phase2",
+            "announce": "侨院之主显现真身！力量暴涨！",
+            "color": "#ff6b6b",
+            "heal": 50,
+            "clearDebuffs": true,
+            "newSkills": [
+              { "name": "先祖之裁决", "mp": 50, "type": "dmg", "multiplier": 1.8, "target": "allEnemy", "desc": "释放先祖裁决，对全体敌人造成180%伤害", "anim": "ancestor_wrath" }
+            ]
+          },
+          {
+            "threshold": 0.25,
+            "name": "侨院之主·归灵",
+            "atkMult": 1.8,
+            "defMult": 1.0,
+            "spdBonus": 8,
+            "appearance": "phase3",
+            "announce": "侨院之主进入归灵状态！狂暴攻击！",
+            "color": "#9b59b6",
+            "heal": 80,
+            "clearDebuffs": true,
+            "newSkills": [
+              { "name": "归灵·灭世", "mp": 60, "type": "dmg", "multiplier": 2.5, "target": "allEnemy", "desc": "归灵绝技，对全体敌人造成250%毁灭伤害", "anim": "ultimate_wrath" },
+              { "name": "灵魂汲取", "mp": 40, "type": "dmgHeal", "multiplier": 1.5, "healSelf": 40, "target": "single", "desc": "吸取灵魂，造成150%伤害并恢复40HP", "anim": "spirit_drain" }
+            ]
+          }
+        ]
+      }
     ],
     "reward": { "exp": 300, "gold": 200 }
   }

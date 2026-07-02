@@ -30,50 +30,64 @@ const HEROES = [
     img: 'assets/characters/pixel-drli.jpg',
     skills: [
       { name: '⚗️ 科学爆破', mp: 25, type: 'dmg', multiplier: 2.0, target: 'single', desc: '调配化学药剂引爆，对单个敌人造成200%法术伤害', anim: 'explosion' },
+      { name: '💥 链式反应', mp: 35, type: 'dmg', multiplier: 1.6, target: 'allEnemy', desc: '引发连锁化学反应，对全体敌人造成160%法术伤害', anim: 'chain_reaction' },
       { name: '🔬 数据分析', mp: 20, type: 'buff', buff: 'atkUp', stat: 'atk', value: 0.25, turns: 3, target: 'all', desc: '分析敌人弱点，全队攻击力+25%持续3回合', anim: 'buff_up' }
-    ]
+    ],
+    ultimate: { name: '☢️ 核裂变风暴', mp: 0, type: 'dmg', multiplier: 3.5, target: 'allEnemy', desc: '【必杀】释放核裂变能量，对全体敌人造成350%毁灭伤害并降低防御', anim: 'nuclear_burst', debuff: 'defDown', stat: 'def', value: 0.4, turns: 2 }
   },
   { id: 'tony', name: 'Tony', role: '辅助', element: 'metal', hp: 95, maxHp: 95, mp: 110, maxMp: 110, atk: 22, def: 22, spd: 30,
     img: 'assets/characters/pixel-tony.jpg',
     skills: [
       { name: '💻 代码病毒', mp: 25, type: 'debuff', debuff: 'defDown', stat: 'def', value: 0.35, turns: 3, target: 'allEnemy', desc: '入侵敌人系统，全体防御-35%持续3回合', anim: 'virus' },
+      { name: '🌐 DDoS攻击', mp: 30, type: 'dmg', multiplier: 1.3, target: 'allEnemy', desc: '发起分布式拒绝服务攻击，对全体敌人造成130%伤害', anim: 'ddos_attack' },
       { name: '🔄 系统重启', mp: 45, type: 'revive', heal: 60, target: 'single', desc: '紧急重启倒下队友的核心程序，复活并恢复60HP', anim: 'revive' }
-    ]
+    ],
+    ultimate: { name: '🤖 天网觉醒', mp: 0, type: 'dmgBuff', multiplier: 2.8, target: 'allEnemy', desc: '【必杀】觉醒天网AI，全体敌人受到280%伤害且全队攻击+50%', anim: 'skynet_awaken', buff: 'atkUp', stat: 'atk', value: 0.5, turns: 3 }
   },
   { id: 'xiaoqi', name: '小琪', role: '治疗', element: 'water', hp: 80, maxHp: 80, mp: 140, maxMp: 140, atk: 18, def: 16, spd: 24,
     img: 'assets/characters/pixel-xiaoqi.jpg',
     skills: [
       { name: '🌈 彩虹治愈', mp: 28, type: 'heal', heal: 80, target: 'single', desc: '召唤虹桥彩虹之力，为单体恢复80HP', anim: 'rainbow_heal' },
+      { name: '🌊 水波荡漾', mp: 32, type: 'dmg', multiplier: 1.5, target: 'allEnemy', desc: '激起水波涟漪，对全体敌人造成150%水属性伤害', anim: 'water_wave' },
       { name: '⭐ 星光护盾', mp: 35, type: 'buff', buff: 'shield', value: 1, turns: 3, target: 'all', desc: '化作星光护罩笼罩全队，3回合内各抵挡一次伤害', anim: 'shield' }
-    ]
+    ],
+    ultimate: { name: '✨ 星辰奇迹', mp: 0, type: 'healBuffAll', heal: 999, target: 'all', desc: '【必杀】召唤星辰之力，全队满血复活/恢复并获得护盾和攻击增益', anim: 'star_miracle', buff: 'atkUp', stat: 'atk', value: 0.4, turns: 3, shield: true }
   },
   { id: 'chenguang', name: '晨光', role: '战士', element: 'water', hp: 160, maxHp: 160, mp: 70, maxMp: 70, atk: 40, def: 38, spd: 14,
     img: 'assets/characters/pixel-chenguang.jpg',
     skills: [
       { name: '🥛 鲜奶冲击', mp: 22, type: 'dmgHeal', multiplier: 1.5, healSelf: 35, target: 'single', desc: '投掷变质鲜奶炸弹，150%伤害并自愈35HP', anim: 'milk_splash' },
+      { name: '🥛 鲜奶海啸', mp: 38, type: 'dmgHeal', multiplier: 1.3, healSelf: 20, target: 'allEnemy', desc: '倾倒大量变质鲜奶，全体敌人130%伤害且自愈20HP', anim: 'milk_tsunami' },
       { name: '🛡️ 坚韧守护', mp: 28, type: 'buff', buff: 'defUp', stat: 'def', value: 0.6, turns: 2, target: 'self', desc: '进入防御姿态，自身防御+60%持续2回合', anim: 'defense_up' }
-    ]
+    ],
+    ultimate: { name: '🐄 光明牛王降临', mp: 0, type: 'dmg', multiplier: 4.0, target: 'single', desc: '【必杀】召唤光明牛王冲撞，对单个敌人造成400%毁灭性伤害', anim: 'cow_king', stunChance: 0.6, stunTurns: 1 }
   },
   { id: 'laozhou', name: '老周', role: '坦克', element: 'wood', hp: 200, maxHp: 200, mp: 60, maxMp: 60, atk: 32, def: 45, spd: 10,
     img: 'assets/characters/pixel-laozhou.jpg',
     skills: [
       { name: '🌾 农耕之力', mp: 18, type: 'dmgDebuff', multiplier: 1.4, debuff: 'atkDown', stat: 'atk', value: 0.25, turns: 3, target: 'single', desc: '挥舞锄头攻击并震慑敌人，140%伤害且敌人攻击-25%', anim: 'earth_smash' },
+      { name: '🌋 大地震怒', mp: 32, type: 'dmgDebuff', multiplier: 1.2, debuff: 'spdDown', stat: 'spd', value: 0.3, turns: 2, target: 'allEnemy', desc: '猛踏大地引发地震，全体敌人120%伤害且速度-30%', anim: 'earthquake' },
       { name: '🧠 经验传授', mp: 22, type: 'buff', buff: 'spdUp', stat: 'spd', value: 0.3, turns: 3, target: 'all', desc: '传授光明农场生存经验，全队速度+30%持续3回合', anim: 'speed_up' }
-    ]
+    ],
+    ultimate: { name: '🌳 万古长青', mp: 0, type: 'buffDmg', multiplier: 2.0, target: 'allEnemy', desc: '【必杀】化身参天古树，全体敌人200%伤害且全队防御+80%回血50HP', anim: 'ancient_tree', buff: 'defUp', stat: 'def', value: 0.8, turns: 3, healAll: 50 }
   },
   { id: 'azhen', name: '阿珍', role: '增益', element: 'fire', hp: 100, maxHp: 100, mp: 115, maxMp: 115, atk: 30, def: 24, spd: 18,
     img: 'assets/characters/pixel-azhen.jpg',
     skills: [
       { name: '🫕 乳鸽大餐', mp: 35, type: 'healBuff', heal: 50, buff: 'atkUp', stat: 'atk', value: 0.2, turns: 2, target: 'all', desc: '光明乳鸽香气四溢，全队恢复50HP且攻击+20%', anim: 'food_feast' },
+      { name: '🔥 红烧地狱', mp: 30, type: 'dmg', multiplier: 1.7, target: 'allEnemy', desc: '召唤红烧烈焰，对全体敌人造成170%火属性伤害', anim: 'inferno' },
       { name: '🍰 美食诱惑', mp: 22, type: 'debuff', debuff: 'stun', chance: 0.55, turns: 1, target: 'single', desc: '用烘焙美食引诱敌人，55%概率眩晕1回合', anim: 'stun_sweet' }
-    ]
+    ],
+    ultimate: { name: '🦢 光明烧鹅·满汉全席', mp: 0, type: 'healDmgBuff', heal: 80, multiplier: 3.0, target: 'allEnemy', desc: '【必杀】端出满汉全席，全队回80HP+攻击+40%，全体敌人300%伤害', anim: 'feast_ultimate', buff: 'atkUp', stat: 'atk', value: 0.4, turns: 3 }
   },
   { id: 'libao', name: '荔宝', role: '刺客', element: 'wood', hp: 80, maxHp: 80, mp: 90, maxMp: 90, atk: 52, def: 14, spd: 36,
     img: 'assets/characters/pixel-libao.jpg',
     skills: [
       { name: '🥋 荔枝飞镖', mp: 22, type: 'dmg', multiplier: 2.2, target: 'single', desc: '投掷爆炸荔枝，对单个敌人造成220%伤害', anim: 'throwing_star' },
+      { name: '🍒 荔枝暴雨', mp: 32, type: 'dmg', multiplier: 1.4, critBonus: 0.2, target: 'allEnemy', desc: '投掷漫天荔枝飞镖，全体敌人140%伤害且暴击率+20%', anim: 'lychee_rain' },
       { name: '🍯 甜蜜暴击', mp: 28, type: 'dmg', multiplier: 1.8, critBonus: 0.35, target: 'single', desc: '甜蜜一击，180%伤害且暴击率+35%', anim: 'critical_hit' }
-    ]
+    ],
+    ultimate: { name: '🥷 影·千荔杀', mp: 0, type: 'dmg', multiplier: 5.0, target: 'single', desc: '【必杀】化身千重荔枝影，对单个敌人造成500%致命伤害（必定暴击）', anim: 'shadow_assassin', alwaysCrit: true }
   }
 ];
 
@@ -87,7 +101,7 @@ const app = express();
 app.use(express.json({ limit: '64kb' }));
 
 // ========== 游戏数据（供客户端使用） ==========
-const heroData = HEROES.map(h => ({ id: h.id, name: h.name, role: h.role, element: h.element, img: h.img, hp: h.hp, mp: h.mp, atk: h.atk, def: h.def, spd: h.spd, skills: h.skills }));
+const heroData = HEROES.map(h => ({ id: h.id, name: h.name, role: h.role, element: h.element, img: h.img, hp: h.hp, mp: h.mp, atk: h.atk, def: h.def, spd: h.spd, skills: h.skills, ultimate: h.ultimate }));
 const levelData = LEVELS.map(l => ({ id: l.id, name: l.name, index: l.index, description: l.description, background: l.background, bgm: l.bgm, reward: l.reward, enemies: l.enemies }));
 
 // ========== 计算文件hash用于缓存清除 ==========
@@ -317,6 +331,61 @@ function damageCalc(attacker, defender, multiplier = 1, critBonus = 0) {
   return { dmg, isCrit: crit > 1, isCounter: elMult > 1, isWeak: elMult < 1, isDodged: false };
 }
 
+// 怒气系统
+function addRage(unit, amount) {
+  if (!unit) return;
+  unit.rage = Math.min(unit.maxRage, (unit.rage || 0) + amount);
+}
+
+// Boss阶段变身检测
+function checkBossPhase(battle, unit) {
+  if (!unit || unit.isPlayer || unit.type !== 'boss' || !unit.bossPhases) return [];
+  const results = [];
+  let hpRatio = unit.hp / unit.maxHp;
+  let currentPhase = unit.phase || 1;
+  const phases = unit.bossPhases;
+  // phases按threshold降序排列，可能一次伤害触发多级变身
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < phases.length; i++) {
+      const phaseData = phases[i];
+      const targetPhase = i + 2;
+      if (hpRatio <= phaseData.threshold && currentPhase < targetPhase) {
+        currentPhase = targetPhase;
+        unit.phase = targetPhase;
+        if (phaseData.atkMult) { unit.atk = Math.round(unit.baseAtk * phaseData.atkMult); }
+        if (phaseData.defMult) { unit.def = Math.round(unit.baseDef * phaseData.defMult); }
+        if (phaseData.spdBonus) { unit.spd = unit.spd + phaseData.spdBonus; }
+        if (phaseData.name) { unit.name = phaseData.name; }
+        if (phaseData.appearance) { unit.appearance = phaseData.appearance; }
+        if (phaseData.newSkills) {
+          for (const ns of phaseData.newSkills) {
+            if (!unit.skills.find(s => s.name === ns.name)) unit.skills.push(ns);
+          }
+        }
+        if (phaseData.heal) {
+          unit.hp = Math.min(unit.maxHp, unit.hp + phaseData.heal);
+          hpRatio = unit.hp / unit.maxHp;
+        }
+        if (phaseData.clearDebuffs) { unit.debuffs = []; }
+        battle.transformations.push({
+          unitId: unit.id,
+          phase: targetPhase,
+          name: unit.name,
+          appearance: unit.appearance,
+          announce: phaseData.announce || `${unit.name} 进入第${targetPhase}阶段！`,
+          color: phaseData.color || '#ff6b6b'
+        });
+        results.push({ phase: targetPhase, announce: phaseData.announce, color: phaseData.color });
+        changed = true;
+        break; // 重新循环以检查是否可进入下一阶段
+      }
+    }
+  }
+  return results;
+}
+
 function getHeroTemplate(id) {
   const h = HEROES.find(x => x.id === id);
   return h ? JSON.parse(JSON.stringify(h)) : null;
@@ -366,21 +435,34 @@ function initBattle(room, levelIndex) {
         name: hero.name, img: hero.img, element: hero.element,
         hp: hpVal, maxHp: maxHpVal, mp: mpVal, maxMp: maxMpVal,
         atk: atkVal, def: defVal, spd: spdVal,
+        rage: 0, maxRage: 100,
         buffs: [], debuffs: [], hasActed: false, order: order++,
       });
     }
   }
   for (const e of level.enemies) {
-    units.push({
+    const isBoss = e.type === 'boss';
+    const enemyData = {
       id: e.id, isPlayer: false, name: e.name, img: e.img, type: e.type, element: e.element,
       hp: e.hp, maxHp: e.hp, mp: e.mp, maxMp: e.mp, atk: e.atk, def: e.def, spd: e.spd,
       skills: e.skills || [], buffs: [], debuffs: [], hasActed: false, order: order++,
-    });
+      rage: 0, maxRage: 100,
+    };
+    if (isBoss && e.phases) {
+      enemyData.bossPhases = JSON.parse(JSON.stringify(e.phases));
+      enemyData.phase = 1;
+      enemyData.baseMaxHp = e.hp;
+      enemyData.baseAtk = e.atk;
+      enemyData.baseDef = e.def;
+      enemyData.baseName = e.name;
+    }
+    units.push(enemyData);
   }
   units.sort((a, b) => b.spd - a.spd);
   room.battle = {
     phase: 'battle', turn: 0, turnCount: 1, units,
     log: [`战斗开始！${level.name}`], pendingAction: null, winner: null, levelIndex,
+    transformations: [],
   };
   startTurn(room);
   return room.battle;
@@ -481,6 +563,8 @@ function performAction(room, unitId, action) {
   const pending = battle.pendingAction;
   if (!pending || pending.unitId !== unitId) return;
   if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
+  // 清空之前的变身事件
+  battle.transformations = [];
   let logMsg = '';
   if (action.type === 'attack') {
     const target = battle.units.find(u => u.id === action.targetId);
@@ -493,20 +577,43 @@ function performAction(room, unitId, action) {
         if (shield) { target.buffs = target.buffs.filter(b => b.type !== 'shield'); logMsg = `${unit.name} 攻击 ${target.name}，被护盾抵挡！`; }
         else {
           target.hp = Math.max(0, target.hp - result.dmg);
+          // 怒气获取：造成伤害+15，受到伤害+10
+          addRage(unit, 15);
+          addRage(target, 10);
           logMsg = `${unit.name} 攻击 ${target.name}，造成 ${result.dmg} 点伤害`;
           if (result.isCrit) logMsg += '（暴击！）';
           if (result.isCounter) logMsg += '（属性克制！）';
           if (result.isWeak) logMsg += '（属性不利）';
           logMsg += '！';
+          // 击杀+20怒气
+          if (target.hp <= 0) addRage(unit, 20);
         }
       }
     }
   } else if (action.type === 'skill') {
     let skill = null;
-    if (unit.isPlayer) skill = HEROES.find(h => h.id === unit.heroId)?.skills?.[action.skillIndex];
-    else skill = unit.skills?.[action.skillIndex];
-    if (skill && unit.mp >= skill.mp) { unit.mp -= skill.mp; logMsg = executeSkill(battle, unit, skill, action.targetId); }
-    else logMsg = `${unit.name} 技能释放失败！`;
+    let isUltimate = false;
+    if (unit.isPlayer) {
+      const hero = HEROES.find(h => h.id === unit.heroId);
+      if (action.isUltimate) {
+        skill = hero?.ultimate;
+        isUltimate = true;
+      } else {
+        skill = hero?.skills?.[action.skillIndex];
+      }
+    } else {
+      skill = unit.skills?.[action.skillIndex];
+    }
+    if (skill) {
+      const mpCost = isUltimate ? 0 : skill.mp;
+      if (unit.mp >= mpCost) {
+        unit.mp -= mpCost;
+        // 必杀技使用后怒气清零
+        if (isUltimate) unit.rage = 0;
+        logMsg = executeSkill(battle, unit, skill, action.targetId, isUltimate);
+      }
+      else logMsg = `${unit.name} 技能释放失败！`;
+    }
   } else if (action.type === 'defend') {
     applyBuff(unit, { type: 'defUp', stat: 'def', value: 0.5, turns: 2 });
     logMsg = `${unit.name} 进入防御姿态！`;
@@ -522,6 +629,17 @@ function performAction(room, unitId, action) {
     }
   }
   if (logMsg) battle.log.push(logMsg);
+
+  // 检查Boss阶段变身（每次造成伤害后）
+  for (const u of battle.units) {
+    if (!u.isPlayer && u.type === 'boss' && u.hp > 0) {
+      const phaseResults = checkBossPhase(battle, u);
+      for (const pr of phaseResults) {
+        battle.log.push(`⚡ ${pr.announce || `${u.name} 变身！`}`);
+      }
+    }
+  }
+
   unit.hasActed = true;
   battle.pendingAction = null;
   const ap = battle.units.filter(u => u.isPlayer && u.hp > 0);
@@ -533,33 +651,76 @@ function performAction(room, unitId, action) {
   startTurn(room);
 }
 
-function executeSkill(battle, unit, skill, targetId) {
-  let msg = `${unit.name} 使用 【${skill.name}】！`;
+function executeSkill(battle, unit, skill, targetId, isUltimate = false) {
+  let msg = `${unit.name} 使用 ${isUltimate ? '【必杀】' : '【'}${skill.name}${isUltimate ? '' : '】'}！`;
+  // Helper: 对单体造成伤害并处理怒气/击杀
+  const dealDamageToTarget = (t, multiplier, critBonus = 0, extraEffects = {}) => {
+    if (!t || t.hp <= 0) return null;
+    let critB = critBonus;
+    if (extraEffects.alwaysCrit) critB = 1.0; // 必定暴击
+    const r = damageCalc(unit, t, multiplier, critB);
+    // 必定暴击时不可闪避
+    if (r.isDodged && extraEffects.alwaysCrit) {
+      r.isDodged = false; r.isCrit = true;
+      const atk = getEffectiveStat(unit, 'atk'); const def = getEffectiveStat(t, 'def');
+      const em = getElementMultiplier(unit.element, t.element);
+      const base = Math.max(1, atk - def * 0.5);
+      r.dmg = Math.max(1, Math.round(base * multiplier * (0.9 + Math.random() * 0.2) * 1.5 * em));
+      r.isCounter = em > 1; r.isWeak = em < 1;
+    }
+    if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; return { dodged: true, target: t }; }
+    const shield = t.buffs?.find(b => b.type === 'shield');
+    if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; return { shielded: true, target: t }; }
+    const hpBefore = t.hp;
+    t.hp = Math.max(0, t.hp - r.dmg);
+    // 怒气获取
+    addRage(unit, 15);
+    addRage(t, 10);
+    msg += ` 对 ${t.name} 造成 ${r.dmg} 点伤害`;
+    if (r.isCrit || extraEffects.alwaysCrit) msg += '（暴击！）';
+    if (r.isCounter) msg += '（属性克制！）';
+    if (r.isWeak) msg += '（属性不利）';
+    // 额外减益效果
+    if (extraEffects.debuff) {
+      applyDebuff(t, { type: extraEffects.debuff, stat: extraEffects.stat || 'def', value: extraEffects.debuffValue || 0.3, turns: extraEffects.debuffTurns || 2 });
+      msg += '并施加减益';
+    }
+    // 眩晕概率
+    if (extraEffects.stunChance && Math.random() < extraEffects.stunChance) {
+      applyDebuff(t, { type: 'stun', turns: extraEffects.stunTurns || 1 });
+      msg += '（眩晕！）';
+    }
+    msg += '！';
+    // 击杀+20怒气
+    if (t.hp <= 0 && hpBefore > 0) addRage(unit, 20);
+    return { ...r, target: t, killed: t.hp <= 0 };
+  };
+  // Helper: 获取敌方全体/友方全体
+  const getEnemyUnits = () => unit.isPlayer ? battle.units.filter(u => !u.isPlayer && u.hp > 0) : battle.units.filter(u => u.isPlayer && u.hp > 0);
+  const getAllyUnits = () => unit.isPlayer ? battle.units.filter(u => u.isPlayer && u.hp > 0) : battle.units.filter(u => !u.isPlayer && u.hp > 0);
+
+  // === dmg类型: 单体/全体伤害 ===
   if (skill.type === 'dmg') {
-    const t = battle.units.find(u => u.id === targetId);
-    if (t && t.hp > 0) {
-      const r = damageCalc(unit, t, skill.multiplier, skill.critBonus || 0);
-      if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; }
-      else {
-        const shield = t.buffs?.find(b => b.type === 'shield');
-        if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; }
-        else {
-          t.hp = Math.max(0, t.hp - r.dmg);
-          msg += ` 对 ${t.name} 造成 ${r.dmg} 点伤害`;
-          if (r.isCrit) msg += '（暴击！）'; if (r.isCounter) msg += '（属性克制！）'; msg += '！';
-        }
-      }
+    if (skill.target === 'allEnemy') {
+      const targets = getEnemyUnits();
+      for (const t of targets) { dealDamageToTarget(t, skill.multiplier, skill.critBonus || 0, { alwaysCrit: skill.alwaysCrit, debuff: skill.debuff, stat: skill.stat, debuffValue: skill.value, debuffTurns: skill.turns }); }
+    } else {
+      const t = battle.units.find(u => u.id === targetId);
+      dealDamageToTarget(t, skill.multiplier, skill.critBonus || 0, {
+        stunChance: skill.stunChance, stunTurns: skill.stunTurns, alwaysCrit: skill.alwaysCrit,
+        debuff: skill.debuff, stat: skill.stat, debuffValue: skill.value, debuffTurns: skill.turns
+      });
     }
   } else if (skill.type === 'heal') {
     const targets = skill.target === 'all'
-      ? (unit.isPlayer ? battle.units.filter(u => u.isPlayer && u.hp > 0) : battle.units.filter(u => !u.isPlayer && u.hp > 0))
+      ? getAllyUnits()
       : [battle.units.find(u => u.id === targetId)].filter(Boolean);
     for (const t of targets) {
-      if (t.hp > 0) { t.hp = Math.min(t.maxHp, t.hp + skill.heal); msg += ` ${t.name} 恢复 ${skill.heal} HP！`; }
+      if (t.hp > 0) { const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + skill.heal); msg += ` ${t.name} 恢复 ${t.hp - before} HP！`; }
     }
   } else if (skill.type === 'buff') {
     const targets = skill.target === 'all'
-      ? (unit.isPlayer ? battle.units.filter(u => u.isPlayer && u.hp > 0) : battle.units.filter(u => !u.isPlayer && u.hp > 0))
+      ? getAllyUnits()
       : skill.target === 'self' ? [unit] : [battle.units.find(u => u.id === targetId)].filter(Boolean);
     for (const t of targets) { if (t.hp > 0) { applyBuff(t, { type: skill.buff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns }); msg += ` ${t.name} 获得增益！`; } }
   } else if (skill.type === 'debuff') {
@@ -571,20 +732,33 @@ function executeSkill(battle, unit, skill, targetId) {
       }
     } else {
       const targets = skill.target === 'allEnemy'
-        ? (unit.isPlayer ? battle.units.filter(u => !u.isPlayer && u.hp > 0) : battle.units.filter(u => u.isPlayer && u.hp > 0))
+        ? getEnemyUnits()
         : [battle.units.find(u => u.id === targetId)].filter(Boolean);
       for (const t of targets) { if (t.hp > 0) { applyDebuff(t, { type: skill.debuff, stat: skill.stat || 'def', value: skill.value, turns: skill.turns }); msg += ` ${t.name} 被减益！`; } }
     }
   } else if (skill.type === 'dmgHeal') {
-    const t = battle.units.find(u => u.id === targetId);
-    if (t && t.hp > 0) {
-      const r = damageCalc(unit, t, skill.multiplier);
-      unit.hp = Math.min(unit.maxHp, unit.hp + skill.healSelf);
-      if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！自身恢复 ${skill.healSelf} HP！`; }
-      else {
-        const shield = t.buffs?.find(b => b.type === 'shield');
-        if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！自身恢复 ${skill.healSelf} HP！`; }
-        else { t.hp = Math.max(0, t.hp - r.dmg); msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害，自身恢复 ${skill.healSelf} HP！`; }
+    if (skill.target === 'allEnemy') {
+      // AoE伤害+自愈
+      const targets = getEnemyUnits();
+      for (const t of targets) { dealDamageToTarget(t, skill.multiplier); }
+      unit.hp = Math.min(unit.maxHp, unit.hp + (skill.healSelf || 20));
+      msg += ` 自身恢复 ${skill.healSelf || 20} HP！`;
+    } else {
+      const t = battle.units.find(u => u.id === targetId);
+      if (t && t.hp > 0) {
+        const r = damageCalc(unit, t, skill.multiplier);
+        unit.hp = Math.min(unit.maxHp, unit.hp + skill.healSelf);
+        if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！自身恢复 ${skill.healSelf} HP！`; }
+        else {
+          const shield = t.buffs?.find(b => b.type === 'shield');
+          if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！自身恢复 ${skill.healSelf} HP！`; }
+          else {
+            t.hp = Math.max(0, t.hp - r.dmg);
+            addRage(unit, 15); addRage(t, 10);
+            msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害，自身恢复 ${skill.healSelf} HP！`;
+            if (t.hp <= 0) addRage(unit, 20);
+          }
+        }
       }
     }
   } else if (skill.type === 'revive') {
@@ -592,26 +766,71 @@ function executeSkill(battle, unit, skill, targetId) {
     if (t && t.hp <= 0) { t.hp = Math.min(t.maxHp, skill.heal); msg += ` ${t.name} 被复活！`; }
     else msg += ' 目标还活着！';
   } else if (skill.type === 'healBuff') {
-    for (const t of battle.units.filter(u => u.isPlayer && u.hp > 0)) {
+    for (const t of getAllyUnits()) {
       t.hp = Math.min(t.maxHp, t.hp + skill.heal);
       applyBuff(t, { type: skill.buff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
       msg += ` ${t.name} 恢复 ${skill.heal} HP 并获得增益！`;
     }
   } else if (skill.type === 'dmgDebuff') {
-    const t = battle.units.find(u => u.id === targetId);
-    if (t && t.hp > 0) {
-      const r = damageCalc(unit, t, skill.multiplier);
-      if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; }
-      else {
-        const shield = t.buffs?.find(b => b.type === 'shield');
-        if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; }
+    if (skill.target === 'allEnemy') {
+      const targets = getEnemyUnits();
+      for (const t of targets) {
+        dealDamageToTarget(t, skill.multiplier, 0, {
+          debuff: skill.debuff, stat: skill.stat || 'atk', debuffValue: skill.value, debuffTurns: skill.turns
+        });
+      }
+    } else {
+      const t = battle.units.find(u => u.id === targetId);
+      if (t && t.hp > 0) {
+        const r = damageCalc(unit, t, skill.multiplier);
+        if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; }
         else {
-          t.hp = Math.max(0, t.hp - r.dmg);
-          applyDebuff(t, { type: skill.debuff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
-          msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害并减益！`;
+          const shield = t.buffs?.find(b => b.type === 'shield');
+          if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; }
+          else {
+            t.hp = Math.max(0, t.hp - r.dmg);
+            addRage(unit, 15); addRage(t, 10);
+            applyDebuff(t, { type: skill.debuff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
+            msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害并减益！`;
+            if (t.hp <= 0) addRage(unit, 20);
+          }
         }
       }
     }
+  }
+  // === 必杀技复合类型 ===
+  else if (skill.type === 'healBuffAll') {
+    // 小琪的星辰奇迹：全队满血+护盾+攻击增益，复活倒下队友
+    for (const t of (unit.isPlayer ? battle.units.filter(u => u.isPlayer) : battle.units.filter(u => !u.isPlayer))) {
+      if (t.hp <= 0) { t.hp = Math.round(t.maxHp * 0.5); msg += ` ${t.name} 复活并恢复HP！`; }
+      else { t.hp = t.maxHp; msg += ` ${t.name} 满血！`; }
+      applyBuff(t, { type: skill.buff || 'atkUp', stat: skill.stat || 'atk', value: skill.value || 0.4, turns: skill.turns || 3 });
+      if (skill.shield) applyBuff(t, { type: 'shield', turns: 2 });
+    }
+  } else if (skill.type === 'dmgBuff') {
+    // Tony的天网觉醒：全体伤害+全队攻击增益
+    const targets = getEnemyUnits();
+    for (const t of targets) { dealDamageToTarget(t, skill.multiplier, skill.critBonus || 0); }
+    for (const a of getAllyUnits()) { applyBuff(a, { type: skill.buff || 'atkUp', stat: skill.stat || 'atk', value: skill.value || 0.5, turns: skill.turns || 3 }); }
+    msg += ' 全队获得攻击增益！';
+  } else if (skill.type === 'buffDmg') {
+    // 老周的万古长青：全体伤害+全队防御增益+回血
+    const targets = getEnemyUnits();
+    for (const t of targets) { dealDamageToTarget(t, skill.multiplier); }
+    for (const a of getAllyUnits()) {
+      applyBuff(a, { type: skill.buff || 'defUp', stat: skill.stat || 'def', value: skill.value || 0.8, turns: skill.turns || 3 });
+      if (skill.healAll) { a.hp = Math.min(a.maxHp, a.hp + skill.healAll); }
+    }
+    msg += ' 全队获得防御增益并恢复HP！';
+  } else if (skill.type === 'healDmgBuff') {
+    // 阿珍的满汉全席：全队回血+攻击增益+全体伤害
+    for (const a of getAllyUnits()) {
+      a.hp = Math.min(a.maxHp, a.hp + (skill.heal || 80));
+      applyBuff(a, { type: skill.buff || 'atkUp', stat: skill.stat || 'atk', value: skill.value || 0.4, turns: skill.turns || 3 });
+    }
+    msg += ` 全队恢复 ${skill.heal || 80} HP并获得增益！`;
+    const targets = getEnemyUnits();
+    for (const t of targets) { dealDamageToTarget(t, skill.multiplier, skill.critBonus || 0); }
   }
   return msg;
 }
@@ -648,8 +867,9 @@ function publicBattle(battle) {
   return {
     phase: battle.phase, turn: battle.turn, turnCount: battle.turnCount, levelIndex: battle.levelIndex,
     turnTimeout: TURN_TIMEOUT_MS,
-    units: battle.units.map(u => ({ ...u, buffs: u.buffs || [], debuffs: u.debuffs || [], alive: u.hp > 0, hasActed: u.hasActed || false, skills: u.skills || [] })),
+    units: battle.units.map(u => ({ ...u, buffs: u.buffs || [], debuffs: u.debuffs || [], alive: u.hp > 0, hasActed: u.hasActed || false, skills: u.skills || [], rage: u.rage || 0, maxRage: u.maxRage || 100, phase: u.phase || 1, appearance: u.appearance || null })),
     log: battle.log.slice(-25), pendingAction: battle.pendingAction, winner: battle.winner,
+    transformations: battle.transformations || [],
   };
 }
 
@@ -764,11 +984,20 @@ io.on('connection', (socket) => {
       if (payload.type === 'attack') { if (target.isPlayer || target.hp <= 0) return ack({ ok: false, error: '只能攻击敌方存活单位' }); }
       else if (payload.type === 'skill') {
         const unit = battle.units.find(u => u.id === pending.unitId);
-        let sk = unit?.isPlayer ? HEROES.find(h => h.id === unit.heroId)?.skills?.[payload.skillIndex] : unit?.skills?.[payload.skillIndex];
+        let sk;
+        if (payload.isUltimate && unit?.isPlayer) {
+          sk = HEROES.find(h => h.id === unit.heroId)?.ultimate;
+        } else {
+          sk = unit?.isPlayer ? HEROES.find(h => h.id === unit.heroId)?.skills?.[payload.skillIndex] : unit?.skills?.[payload.skillIndex];
+        }
         if (sk) {
-          if (sk.type === 'revive') { if (!target.isPlayer || target.hp > 0) return ack({ ok: false, error: '只能复活倒下的队友' }); }
-          else if (sk.type === 'heal' && sk.target === 'single') { if (!target.isPlayer || target.hp <= 0) return ack({ ok: false, error: '只能对存活队友使用' }); }
-          else { if (target.isPlayer || target.hp <= 0) return ack({ ok: false, error: '只能对敌方单位使用' }); }
+          // 全体目标技能不需要targetId（但客户端可能传一个）
+          const isAllTarget = sk.target === 'all' || sk.target === 'allEnemy' || sk.target === 'self';
+          if (!isAllTarget) {
+            if (sk.type === 'revive') { if (!target.isPlayer || target.hp > 0) return ack({ ok: false, error: '只能复活倒下的队友' }); }
+            else if (sk.type === 'heal' && sk.target === 'single') { if (!target.isPlayer || target.hp <= 0) return ack({ ok: false, error: '只能对存活队友使用' }); }
+            else { if (target.isPlayer || target.hp <= 0) return ack({ ok: false, error: '只能对敌方单位使用' }); }
+          }
         }
       } else if (payload.type === 'item') { if (!target.isPlayer || target.hp <= 0) return ack({ ok: false, error: '只能对存活队友使用道具' }); }
     }

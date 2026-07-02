@@ -777,32 +777,49 @@ const Game = {
       atk: hero.atk,
       def: hero.def,
       spd: hero.spd,
+      rage: 0,
+      maxRage: 100,
       buffs: [],
       debuffs: [],
       hasActed: false,
       skills: hero.skills,
+      ultimate: hero.ultimate,
       alive: true,
     };
 
-    const enemyUnits = level.enemies.map((e, i) => ({
-      id: `e_${i}`,
-      isPlayer: false,
-      name: e.name,
-      img: e.img,
-      element: e.element,
-      hp: e.hp,
-      maxHp: e.hp,
-      mp: e.mp,
-      maxMp: e.mp,
-      atk: e.atk,
-      def: e.def,
-      spd: e.spd,
-      skills: e.skills || [],
-      buffs: [],
-      debuffs: [],
-      hasActed: false,
-      alive: true,
-    }));
+    const enemyUnits = level.enemies.map((e, i) => {
+      const isBoss = e.type === 'boss';
+      const data = {
+        id: `e_${i}`,
+        isPlayer: false,
+        name: e.name,
+        img: e.img,
+        type: e.type,
+        element: e.element,
+        hp: e.hp,
+        maxHp: e.hp,
+        mp: e.mp,
+        maxMp: e.mp,
+        atk: e.atk,
+        def: e.def,
+        spd: e.spd,
+        skills: e.skills || [],
+        rage: 0,
+        maxRage: 100,
+        buffs: [],
+        debuffs: [],
+        hasActed: false,
+        alive: true,
+      };
+      if (isBoss && e.phases) {
+        data.bossPhases = JSON.parse(JSON.stringify(e.phases));
+        data.phase = 1;
+        data.baseAtk = e.atk;
+        data.baseDef = e.def;
+        data.baseName = e.name;
+      }
+      return data;
+    });
 
     let units = [playerUnit, ...enemyUnits];
     units.sort((a, b) => b.spd - a.spd);
@@ -819,6 +836,7 @@ const Game = {
       level,
       combo: 0,
       _animLock: false,
+      transformations: [],
     };
 
     this.room.battle = this.soloBattle;
@@ -1034,6 +1052,35 @@ const Game = {
     layer.appendChild(a);
     setTimeout(() => a.remove(), 1200);
   },
+  _playTransformEffect(targetId, appearance, phase) {
+    const layer = this._battleLayer();
+    const el = this._unitEl(targetId);
+    if (!layer || !el) return;
+    const { x, y } = this._unitCenter(el, layer);
+    // 变身光环特效
+    const ring = document.createElement('div');
+    ring.className = 'transform-ring';
+    ring.style.left = x + 'px';
+    ring.style.top = y + 'px';
+    ring.style.transform = 'translate(-50%,-50%)';
+    layer.appendChild(ring);
+    setTimeout(() => ring.remove(), 1500);
+    // 变身光柱
+    const pillar = document.createElement('div');
+    pillar.className = `transform-pillar phase-${phase || 2}`;
+    pillar.style.left = x + 'px';
+    pillar.style.top = y + 'px';
+    pillar.style.transform = 'translate(-50%,-100%)';
+    layer.appendChild(pillar);
+    setTimeout(() => pillar.remove(), 1200);
+    // Boss单位添加变身class
+    el.classList.add('transforming');
+    if (appearance) el.classList.add(`phase-${appearance}`);
+    setTimeout(() => el.classList.remove('transforming'), 1000);
+    // 屏幕震动
+    this._screenShake(10, 600);
+    AudioSystem.playSfx('hit');
+  },
 
   soloEnemyAI() {
     const battle = this.soloBattle;
@@ -1141,6 +1188,42 @@ const Game = {
     };
 
     let skillAnim = null;
+    let isUltimateAction = false;
+
+    // 怒气辅助函数（solo模式）
+    const addRageSolo = (u, amt) => { if (u) u.rage = Math.min(u.maxRage || 100, (u.rage || 0) + amt); };
+    // Boss阶段检测（solo模式）
+    const checkBossPhaseSolo = (u) => {
+      if (!u || u.isPlayer || u.type !== 'boss' || !u.bossPhases) return [];
+      const results = [];
+      let hpRatio = u.hp / u.maxHp;
+      let curPhase = u.phase || 1;
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let i = 0; i < u.bossPhases.length; i++) {
+          const pd = u.bossPhases[i];
+          const targetPhase = i + 2;
+          if (hpRatio <= pd.threshold && curPhase < targetPhase) {
+            curPhase = targetPhase;
+            u.phase = targetPhase;
+            if (pd.atkMult) u.atk = Math.round(u.baseAtk * pd.atkMult);
+            if (pd.defMult) u.def = Math.round(u.baseDef * pd.defMult);
+            if (pd.spdBonus) u.spd = u.spd + pd.spdBonus;
+            if (pd.name) u.name = pd.name;
+            if (pd.appearance) u.appearance = pd.appearance;
+            if (pd.newSkills) { for (const ns of pd.newSkills) { if (!u.skills.find(s => s.name === ns.name)) u.skills.push(ns); } }
+            if (pd.heal) { u.hp = Math.min(u.maxHp, u.hp + pd.heal); hpRatio = u.hp / u.maxHp; }
+            if (pd.clearDebuffs) u.debuffs = [];
+            battle.transformations.push({ unitId: u.id, phase: targetPhase, name: u.name, appearance: u.appearance, announce: pd.announce, color: pd.color || '#ff6b6b' });
+            results.push({ announce: pd.announce, color: pd.color || '#ff6b6b' });
+            changed = true;
+            break;
+          }
+        }
+      }
+      return results;
+    };
 
     if (action.type === 'attack') {
       const target = battle.units.find(u => u.id === action.targetId);
@@ -1157,38 +1240,54 @@ const Game = {
             logMsg = `${unit.name} 攻击 ${target.name}，被护盾抵挡！`;
             animEvents.push({ kind: 'shield', targetId: target.id });
           } else {
+            const hpBefore = target.hp;
             target.hp = Math.max(0, target.hp - result.dmg);
+            // 怒气获取
+            addRageSolo(unit, 15);
+            addRageSolo(target, 10);
             logMsg = `${unit.name} 攻击 ${target.name}，造成 ${result.dmg} 点伤害`;
             if (result.isCrit) logMsg += '（暴击！）';
             if (result.isCounter) logMsg += '（属性克制！）';
             if (result.isWeak) logMsg += '（属性不利）';
             logMsg += '！';
             addDmgEvent(target.id, result);
+            if (target.hp <= 0 && hpBefore > 0) addRageSolo(unit, 20);
             AudioSystem.playSfx('hit');
           }
         }
       }
     } else if (action.type === 'skill') {
       let skill = null;
+      isUltimateAction = !!action.isUltimate;
       if (unit.isPlayer) {
         const heroData = this.heroes.find(h => h.id === unit.heroId);
-        skill = heroData?.skills?.[action.skillIndex];
+        if (action.isUltimate) {
+          skill = heroData?.ultimate;
+        } else {
+          skill = heroData?.skills?.[action.skillIndex];
+        }
       } else {
         skill = unit.skills?.[action.skillIndex];
       }
-      if (skill && unit.mp >= skill.mp) {
-        unit.mp -= skill.mp;
-        skillAnim = skill.anim; // 记录技能特效名
-        const skillResult = this.executeSkillLogic(battle, unit, skill, action.targetId, {
-          addDmgEvent, addHealEvent, addBuffEvent, addDebuffEvent,
-          addMissEvent: (tid) => animEvents.push({ kind: 'miss', targetId: tid }),
-          addShieldEvent: (tid) => animEvents.push({ kind: 'shield', targetId: tid }),
-        });
-        logMsg = skillResult.msg;
-        if (skill.type === 'heal' || skill.type === 'healBuff') {
-          AudioSystem.playSfx('heal');
-        } else {
-          AudioSystem.playSfx('hit');
+      if (skill) {
+        const mpCost = isUltimateAction ? 0 : skill.mp;
+        if (unit.mp >= mpCost) {
+          unit.mp -= mpCost;
+          if (isUltimateAction) { unit.rage = 0; }
+          skillAnim = skill.anim; // 记录技能特效名
+          const skillResult = this.executeSkillLogic(battle, unit, skill, action.targetId, {
+            addDmgEvent, addHealEvent, addBuffEvent, addDebuffEvent,
+            addMissEvent: (tid) => animEvents.push({ kind: 'miss', targetId: tid }),
+            addShieldEvent: (tid) => animEvents.push({ kind: 'shield', targetId: tid }),
+            isUltimate: isUltimateAction,
+            addRage: addRageSolo,
+          });
+          logMsg = skillResult.msg;
+          if (skill.type === 'heal' || skill.type === 'healBuff' || skill.type === 'healBuffAll' || skill.type === 'healDmgBuff') {
+            AudioSystem.playSfx('heal');
+          } else {
+            AudioSystem.playSfx('hit');
+          }
         }
       }
     } else if (action.type === 'defend') {
@@ -1223,16 +1322,72 @@ const Game = {
     }
 
     if (logMsg) battle.log.push(logMsg);
+
+    // 检查Boss阶段变身（solo模式）
+    battle.transformations = [];
+    for (const u of battle.units) {
+      if (!u.isPlayer && u.type === 'boss' && u.hp > 0) {
+        const prs = checkBossPhaseSolo(u);
+        for (const pr of prs) battle.log.push(`⚡ ${pr.announce || 'Boss变身！'}`);
+      }
+    }
+
     unit.hasActed = true;
 
     // ===== 播放动画序列 =====
+    // 必杀技全屏特效
+    if (isUltimateAction) {
+      this._screenShake(12, 500);
+      this._critFlash();
+      setTimeout(() => this._battleAnnounce('✦ 必杀技 ✦', '#ffd93d'), 100);
+    }
     // 1. 立即播放攻击冲刺动画
     this._startAttackAnim(unitId);
-    // 技能专属特效（在攻击者位置）
-    if (skillAnim && ['buff-up','defense-up','speed-up','virus','food-feast'].includes(skillAnim)) {
+    // 技能专属特效（在攻击者位置）- AoE技能先播放一个中心点特效
+    const isAoESkill = skill && (skill.target === 'allEnemy' || skill.target === 'all');
+    if (skillAnim && ['buff-up','defense-up','speed-up','virus','food-feast','buff_up','defense_up','speed_up'].includes(skillAnim)) {
       setTimeout(() => this._spawnEffect(skillAnim, unit.id, { fromId: unitId }), 200);
     }
-    // 2. 250ms后（冲刺到目标位置时）播放受击+伤害数字
+    // AoE技能在攻击者位置播放一个聚气特效
+    if (isAoESkill && skillAnim && !['buff-up','defense-up','speed-up','virus','food-feast','buff_up','defense_up','speed_up'].includes(skillAnim)) {
+      setTimeout(() => {
+        const layer = this._battleLayer();
+        if (layer) {
+          const el = this._unitEl(unitId);
+          if (el) {
+            const c = this._unitCenter(el, layer);
+            const charge = document.createElement('div');
+            charge.className = 'aoe-charge';
+            charge.style.left = c.x + 'px';
+            charge.style.top = c.y + 'px';
+            charge.style.transform = 'translate(-50%,-50%)';
+            layer.appendChild(charge);
+            setTimeout(() => charge.remove(), 600);
+            // AoE冲击波特效
+            const wave = document.createElement('div');
+            const waveClass = unit.element || 'default';
+            wave.className = `aoe-wave ${waveClass}`;
+            wave.style.left = c.x + 'px';
+            wave.style.top = c.y + 'px';
+            layer.appendChild(wave);
+            setTimeout(() => wave.remove(), 900);
+          }
+        }
+      }, 150);
+    }
+    // 必杀技全屏光效
+    if (isUltimateAction) {
+      setTimeout(() => {
+        const layer = this._battleLayer();
+        if (layer) {
+          const overlay = document.createElement('div');
+          overlay.className = 'ultimate-overlay';
+          layer.appendChild(overlay);
+          setTimeout(() => overlay.remove(), 800);
+        }
+      }, 200);
+    }
+    // 2. 280ms后（冲刺到目标位置时）播放受击+伤害数字
     let comboHit = false;
     setTimeout(() => {
       animEvents.forEach((ev, i) => {
@@ -1248,13 +1403,13 @@ const Game = {
             this._floatNum(ev.targetId, ev.dmg, dtype, extra);
             if (ev.isCrit) {
               this._spawnEffect('critical', ev.targetId);
-              this._screenShake(8, 350);
+              if (!isUltimateAction) this._screenShake(8, 350);
               this._critFlash();
             } else if (ev.dmg >= Math.round((battle.units.find(u=>u.id===ev.targetId)?.maxHp||100)*0.2)) {
-              this._screenShake(4, 200);
+              this._screenShake(isUltimateAction ? 6 : 4, 200);
             }
-            // 技能特效在受击位置
-            if (skillAnim && !['buff-up','defense-up','speed-up','virus','food-feast'].includes(skillAnim)) {
+            // 技能特效在受击位置（AoE技能对每个目标都播放特效）
+            if (skillAnim && !['buff-up','defense-up','speed-up','virus','food-feast','buff_up','defense_up','speed_up'].includes(skillAnim)) {
               this._spawnEffect(skillAnim, ev.targetId, { fromId: unitId });
             }
             // Combo系统：玩家行动内首次命中累积combo
@@ -1272,13 +1427,13 @@ const Game = {
           } else if (ev.kind === 'heal') {
             this._flashGlow(ev.targetId, '6bcb77');
             this._floatNum(ev.targetId, ev.amount, 'heal');
-            if (skillAnim === 'rainbow-heal' || skillAnim === 'food-feast' || skillAnim === 'revive') {
+            if (skillAnim === 'rainbow-heal' || skillAnim === 'food-feast' || skillAnim === 'revive' || skillAnim === 'spirit_heal' || skillAnim === 'star_miracle') {
               this._spawnEffect(skillAnim, ev.targetId);
             } else {
               this._spawnEffect('rainbow-heal', ev.targetId);
             }
             // 复活特效额外处理
-            if (skillAnim === 'revive') {
+            if (skillAnim === 'revive' || skillAnim === 'star_miracle') {
               const revived = battle.units.find(u => u.id === ev.targetId);
               if (revived) {
                 const el = this._unitEl(ev.targetId);
@@ -1302,11 +1457,23 @@ const Game = {
           }
         }, delay);
       });
+      // 播放Boss变身公告
+      if (battle.transformations && battle.transformations.length > 0) {
+        setTimeout(() => {
+          battle.transformations.forEach((t, i) => {
+            setTimeout(() => {
+              this._battleAnnounce(t.announce || '变身！', t.color || '#ff6b6b');
+              this._playTransformEffect(t.unitId, t.appearance, t.phase);
+            }, i * 400);
+          });
+        }, animEvents.length * 80 + 200);
+      }
     }, 280);
 
     // 3. 动画播放完毕后，更新UI并推进回合
     const spd = SettingsSystem.data.battleSpeed || 1;
-    const totalAnimTime = (280 + animEvents.length * 80 + 500) / spd;
+    const transformDelay = (battle.transformations?.length || 0) * 400 + 800;
+    const totalAnimTime = (280 + animEvents.length * 80 + 500 + transformDelay) / spd;
     setTimeout(() => {
       battle.pendingAction = null;
 
@@ -1326,8 +1493,9 @@ const Game = {
   },
 
   executeSkillLogic(battle, unit, skill, targetId, callbacks = {}) {
-    const { addDmgEvent = () => {}, addHealEvent = () => {}, addBuffEvent = () => {}, addDebuffEvent = () => {}, addMissEvent = () => {}, addShieldEvent = () => {} } = callbacks;
-    let msg = `${unit.name} 使用 【${skill.name}】！`;
+    const { addDmgEvent = () => {}, addHealEvent = () => {}, addBuffEvent = () => {}, addDebuffEvent = () => {}, addMissEvent = () => {}, addShieldEvent = () => {}, addRage = () => {} } = callbacks;
+    const isUlt = callbacks.isUltimate;
+    let msg = `${unit.name} 使用 ${isUlt ? '【必杀】' : '【'}${skill.name}${isUlt ? '' : '】'}！`;
     const applyB = (u, b) => {
       u.buffs = u.buffs || [];
       const ex = u.buffs.find(x => x.type === b.type);
@@ -1363,39 +1531,61 @@ const Game = {
       const spdDiff = dSpd - aSpd;
       const dodgeChance = Math.max(0, Math.min(0.15, spdDiff * 0.006));
       if (Math.random() < dodgeChance) return { dmg: 0, isCrit: false, isCounter: false, isWeak: false, isDodged: true };
-      const crit = Math.random() < (0.15 + critB) ? 1.5 : 1;
+      let critChance = 0.15 + critB;
+      if (skill.alwaysCrit) critChance = 1.0;
+      const crit = Math.random() < critChance ? 1.5 : 1;
       const em = elMult(atk.element, def.element);
       const dmg = Math.max(1, Math.round(base * mult * roll * crit * em));
       return { dmg, isCrit: crit > 1, isCounter: em > 1, isWeak: em < 1, isDodged: false };
     };
+    const getEnemyUnits = () => unit.isPlayer ? battle.units.filter(u => !u.isPlayer && u.hp > 0) : battle.units.filter(u => u.isPlayer && u.hp > 0);
+    const getAllyUnits = () => unit.isPlayer ? battle.units.filter(u => u.isPlayer && u.hp > 0) : battle.units.filter(u => !u.isPlayer && u.hp > 0);
+    const dealDmg = (t, mult, critB = 0, extra = {}) => {
+      if (!t || t.hp <= 0) return;
+      let cb = critB;
+      if (extra.alwaysCrit) cb = 1.0;
+      const r = calcDmg(unit, t, mult, cb);
+      if (r.isDodged || (extra.alwaysCrit && r.dmg === 0)) {
+        // alwaysCrit: recalc without dodge (simpler: just don't dodge)
+      }
+      // For alwaysCrit, override dodge
+      if (extra.alwaysCrit && r.isDodged) {
+        // Re-roll without dodge
+        const a = getEff(unit, 'atk'); const d = getEff(t, 'def');
+        const base = Math.max(1, a - d * 0.5);
+        const roll = 0.9 + Math.random() * 0.2;
+        const em = elMult(unit.element, t.element);
+        const ndmg = Math.max(1, Math.round(base * mult * roll * 1.5 * em));
+        r.dmg = ndmg; r.isCrit = true; r.isCounter = em > 1; r.isWeak = em < 1; r.isDodged = false;
+      }
+      if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; addMissEvent(t.id); if (unit.isPlayer) battle.combo = 0; return; }
+      const shield = t.buffs?.find(b => b.type === 'shield');
+      if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; addShieldEvent(t.id); return; }
+      const hpBefore = t.hp;
+      t.hp = Math.max(0, t.hp - r.dmg);
+      addRage(unit, 15); addRage(t, 10);
+      msg += ` 对 ${t.name} 造成 ${r.dmg} 点伤害`;
+      if (r.isCrit || extra.alwaysCrit) msg += '（暴击！）';
+      if (r.isCounter) msg += '（属性克制！）';
+      if (r.isWeak) msg += '（属性不利）';
+      if (extra.debuff) { applyD(t, { type: extra.debuff, stat: extra.stat || 'def', value: extra.debuffValue || 0.3, turns: extra.debuffTurns || 2 }); msg += '并减益'; addDebuffEvent(t.id, extra.debuff); }
+      if (extra.stunChance && Math.random() < extra.stunChance) { applyD(t, { type: 'stun', turns: extra.stunTurns || 1 }); msg += '（眩晕！）'; }
+      msg += '！';
+      addDmgEvent(t.id, r);
+      if (t.hp <= 0 && hpBefore > 0) addRage(unit, 20);
+    };
 
     if (skill.type === 'dmg') {
-      const target = battle.units.find(u => u.id === targetId);
-      if (target && target.hp > 0) {
-        const result = calcDmg(unit, target, skill.multiplier, skill.critBonus || 0);
-        if (result.isDodged) {
-          msg += ` ${target.name} 闪避了攻击！`;
-          if (unit.isPlayer) battle.combo = 0;
-          addMissEvent(target.id);
-        } else {
-          const shield = target.buffs?.find(b => b.type === 'shield');
-          if (shield) {
-            target.buffs = target.buffs.filter(b => b.type !== 'shield');
-            msg += ` 被 ${target.name} 的护盾抵挡！`;
-            addShieldEvent(target.id);
-          } else {
-            target.hp = Math.max(0, target.hp - result.dmg);
-            msg += ` 对 ${target.name} 造成 ${result.dmg} 点伤害`;
-            if (result.isCrit) msg += '（暴击！）';
-            if (result.isCounter) msg += '（属性克制！）';
-            msg += '！';
-            addDmgEvent(target.id, result);
-          }
-        }
+      if (skill.target === 'allEnemy') {
+        const targets = getEnemyUnits();
+        for (const t of targets) dealDmg(t, skill.multiplier, skill.critBonus || 0, { alwaysCrit: skill.alwaysCrit });
+      } else {
+        const t = battle.units.find(u => u.id === targetId);
+        dealDmg(t, skill.multiplier, skill.critBonus || 0, { stunChance: skill.stunChance, stunTurns: skill.stunTurns, alwaysCrit: skill.alwaysCrit, debuff: skill.debuff, stat: skill.stat, debuffValue: skill.value, debuffTurns: skill.turns });
       }
     } else if (skill.type === 'heal') {
-      if (skill.target === 'all') {
-        const targets = battle.units.filter(u => u.isPlayer && u.hp > 0);
+      if (skill.target === 'all' || skill.target === 'self') {
+        const targets = skill.target === 'all' ? getAllyUnits() : [unit];
         for (const t of targets) {
           const before = t.hp;
           t.hp = Math.min(t.maxHp, t.hp + skill.heal);
@@ -1404,7 +1594,7 @@ const Game = {
           addHealEvent(t.id, healed);
         }
       } else {
-        const target = unit;
+        const target = battle.units.find(u => u.id === targetId) || unit;
         const before = target.hp;
         target.hp = Math.min(target.maxHp, target.hp + skill.heal);
         const healed = target.hp - before;
@@ -1412,110 +1602,104 @@ const Game = {
         addHealEvent(target.id, healed);
       }
     } else if (skill.type === 'buff') {
-      const targets = skill.target === 'all'
-        ? (unit.isPlayer ? battle.units.filter(u => u.isPlayer && u.hp > 0) : battle.units.filter(u => !u.isPlayer && u.hp > 0))
-        : skill.target === 'self' ? [unit]
-        : [battle.units.find(u => u.id === targetId)].filter(Boolean);
+      const targets = skill.target === 'all' ? getAllyUnits() : skill.target === 'self' ? [unit] : [battle.units.find(u => u.id === targetId)].filter(Boolean);
       const buffAnimMap = { atkUp: 'buff-up', defUp: 'defense-up', spdUp: 'speed-up', shield: 'shield' };
-      for (const t of targets) {
-        if (t.hp > 0) {
-          applyB(t, { type: skill.buff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
-          msg += ` ${t.name} 获得增益！`;
-          addBuffEvent(t.id, buffAnimMap[skill.buff] || 'buff-up');
-        }
-      }
+      for (const t of targets) { if (t.hp > 0) { applyB(t, { type: skill.buff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns }); msg += ` ${t.name} 获得增益！`; addBuffEvent(t.id, buffAnimMap[skill.buff] || 'buff-up'); } }
     } else if (skill.type === 'debuff') {
       if (skill.debuff === 'stun') {
         const target = battle.units.find(u => u.id === targetId);
         if (target && target.hp > 0) {
-          if (Math.random() < (skill.chance || 0.5)) {
-            applyD(target, { type: 'stun', turns: skill.turns });
-            msg += ` ${target.name} 被眩晕！`;
-            addDebuffEvent(target.id, 'stun');
-          } else {
-            msg += ` 未命中！`;
-          }
+          if (Math.random() < (skill.chance || 0.5)) { applyD(target, { type: 'stun', turns: skill.turns }); msg += ` ${target.name} 被眩晕！`; addDebuffEvent(target.id, 'stun'); }
+          else msg += ' 未命中！';
         }
       } else {
-        const targets = skill.target === 'allEnemy'
-          ? (unit.isPlayer ? battle.units.filter(u => !u.isPlayer && u.hp > 0) : battle.units.filter(u => u.isPlayer && u.hp > 0))
-          : [battle.units.find(u => u.id === targetId)].filter(Boolean);
-        for (const t of targets) {
-          if (t.hp > 0) {
-            applyD(t, { type: skill.debuff, stat: skill.stat || 'def', value: skill.value, turns: skill.turns });
-            msg += ` ${t.name} 被施加减益！`;
-            addDebuffEvent(t.id, skill.debuff);
-          }
-        }
+        const targets = skill.target === 'allEnemy' ? getEnemyUnits() : [battle.units.find(u => u.id === targetId)].filter(Boolean);
+        for (const t of targets) { if (t.hp > 0) { applyD(t, { type: skill.debuff, stat: skill.stat || 'def', value: skill.value, turns: skill.turns }); msg += ` ${t.name} 被施加减益！`; addDebuffEvent(t.id, skill.debuff); } }
       }
     } else if (skill.type === 'dmgHeal') {
-      const target = battle.units.find(u => u.id === targetId);
-      if (target && target.hp > 0) {
-        const result = calcDmg(unit, target, skill.multiplier);
+      if (skill.target === 'allEnemy') {
+        const targets = getEnemyUnits();
+        for (const t of targets) dealDmg(t, skill.multiplier);
         const before = unit.hp;
-        unit.hp = Math.min(unit.maxHp, unit.hp + skill.healSelf);
-        const healed = unit.hp - before;
-        addHealEvent(unit.id, healed);
-        if (result.isDodged) {
-          msg += ` ${target.name} 闪避了攻击！自身恢复 ${healed} HP！`;
-          if (unit.isPlayer) battle.combo = 0;
-          addMissEvent(target.id);
-        } else {
-          const shield = target.buffs?.find(b => b.type === 'shield');
-          if (shield) {
-            target.buffs = target.buffs.filter(b => b.type !== 'shield');
-            msg += ` 被 ${target.name} 的护盾抵挡！自身恢复 ${healed} HP！`;
-            addShieldEvent(target.id);
-          } else {
-            target.hp = Math.max(0, target.hp - result.dmg);
-            msg += ` 对 ${target.name} 造成 ${result.dmg} 伤害，自身恢复 ${healed} HP！`;
-            addDmgEvent(target.id, result);
+        unit.hp = Math.min(unit.maxHp, unit.hp + (skill.healSelf || 20));
+        addHealEvent(unit.id, unit.hp - before);
+        msg += ` 自身恢复 ${unit.hp - before} HP！`;
+      } else {
+        const t = battle.units.find(u => u.id === targetId);
+        if (t && t.hp > 0) {
+          const r = calcDmg(unit, t, skill.multiplier);
+          const before = unit.hp;
+          unit.hp = Math.min(unit.maxHp, unit.hp + skill.healSelf);
+          const healed = unit.hp - before;
+          addHealEvent(unit.id, healed);
+          if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！自身恢复 ${healed} HP！`; addMissEvent(t.id); }
+          else {
+            const shield = t.buffs?.find(b => b.type === 'shield');
+            if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！自身恢复 ${healed} HP！`; addShieldEvent(t.id); }
+            else { t.hp = Math.max(0, t.hp - r.dmg); addRage(unit, 15); addRage(t, 10); msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害，自身恢复 ${healed} HP！`; addDmgEvent(t.id, r); if (t.hp <= 0) addRage(unit, 20); }
           }
         }
       }
     } else if (skill.type === 'revive') {
-      const target = battle.units.find(u => u.id === targetId);
-      if (target && target.hp <= 0) {
-        target.hp = Math.min(target.maxHp, skill.heal);
-        msg += ` ${target.name} 被复活，恢复 ${skill.heal} HP！`;
-        addHealEvent(target.id, skill.heal);
-      } else {
-        msg += ` 目标还活着！`;
-      }
+      const t = battle.units.find(u => u.id === targetId);
+      if (t && t.hp <= 0) { t.hp = Math.min(t.maxHp, skill.heal); msg += ` ${t.name} 被复活，恢复 ${skill.heal} HP！`; addHealEvent(t.id, skill.heal); }
+      else msg += ' 目标还活着！';
     } else if (skill.type === 'healBuff') {
-      const targets = battle.units.filter(u => u.isPlayer && u.hp > 0);
+      const targets = getAllyUnits();
       for (const t of targets) {
-        const before = t.hp;
-        t.hp = Math.min(t.maxHp, t.hp + skill.heal);
-        const healed = t.hp - before;
+        const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + skill.heal); const healed = t.hp - before;
         applyB(t, { type: skill.buff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
-        msg += ` ${t.name} 恢复 ${healed} HP 并获得增益！`;
-        addHealEvent(t.id, healed);
-        addBuffEvent(t.id, 'buff-up');
+        msg += ` ${t.name} 恢复 ${healed} HP 并获得增益！`; addHealEvent(t.id, healed); addBuffEvent(t.id, 'buff-up');
       }
     } else if (skill.type === 'dmgDebuff') {
-      const target = battle.units.find(u => u.id === targetId);
-      if (target && target.hp > 0) {
-        const result = calcDmg(unit, target, skill.multiplier);
-        if (result.isDodged) {
-          msg += ` ${target.name} 闪避了攻击！`;
-          if (unit.isPlayer) battle.combo = 0;
-          addMissEvent(target.id);
-        } else {
-          const shield = target.buffs?.find(b => b.type === 'shield');
-          if (shield) {
-            target.buffs = target.buffs.filter(b => b.type !== 'shield');
-            msg += ` 被 ${target.name} 的护盾抵挡！`;
-            addShieldEvent(target.id);
-          } else {
-            target.hp = Math.max(0, target.hp - result.dmg);
-            applyD(target, { type: skill.debuff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
-            msg += ` 对 ${target.name} 造成 ${result.dmg} 伤害并降低攻击力！`;
-            addDmgEvent(target.id, result);
-            addDebuffEvent(target.id, skill.debuff);
+      if (skill.target === 'allEnemy') {
+        const targets = getEnemyUnits();
+        for (const t of targets) dealDmg(t, skill.multiplier, 0, { debuff: skill.debuff, stat: skill.stat || 'atk', debuffValue: skill.value, debuffTurns: skill.turns });
+      } else {
+        const t = battle.units.find(u => u.id === targetId);
+        if (t && t.hp > 0) {
+          const r = calcDmg(unit, t, skill.multiplier);
+          if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; addMissEvent(t.id); }
+          else {
+            const shield = t.buffs?.find(b => b.type === 'shield');
+            if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; addShieldEvent(t.id); }
+            else { t.hp = Math.max(0, t.hp - r.dmg); addRage(unit,15); addRage(t,10); applyD(t,{type:skill.debuff,stat:skill.stat||'atk',value:skill.value,turns:skill.turns}); msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害并减益！`; addDmgEvent(t.id,r); addDebuffEvent(t.id,skill.debuff); if(t.hp<=0) addRage(unit,20); }
           }
         }
       }
+    }
+    // === 必杀技复合类型 ===
+    else if (skill.type === 'healBuffAll') {
+      const allAllies = unit.isPlayer ? battle.units.filter(u => u.isPlayer) : battle.units.filter(u => !u.isPlayer);
+      for (const t of allAllies) {
+        if (t.hp <= 0) { t.hp = Math.round(t.maxHp * 0.5); msg += ` ${t.name} 复活！`; addHealEvent(t.id, t.hp); }
+        else { const before = t.hp; t.hp = t.maxHp; msg += ` ${t.name} 满血！`; addHealEvent(t.id, t.maxHp - before); }
+        applyB(t, { type: skill.buff || 'atkUp', stat: skill.stat || 'atk', value: skill.value || 0.4, turns: skill.turns || 3 });
+        addBuffEvent(t.id, 'buff-up');
+        if (skill.shield) applyB(t, { type: 'shield', turns: 2 });
+      }
+    } else if (skill.type === 'dmgBuff') {
+      const targets = getEnemyUnits();
+      for (const t of targets) dealDmg(t, skill.multiplier, skill.critBonus || 0);
+      for (const a of getAllyUnits()) { applyB(a,{type:skill.buff||'atkUp',stat:skill.stat||'atk',value:skill.value||0.5,turns:skill.turns||3}); addBuffEvent(a.id,'buff-up'); }
+      msg += ' 全队获得攻击增益！';
+    } else if (skill.type === 'buffDmg') {
+      const targets = getEnemyUnits();
+      for (const t of targets) dealDmg(t, skill.multiplier);
+      for (const a of getAllyUnits()) {
+        applyB(a,{type:skill.buff||'defUp',stat:skill.stat||'def',value:skill.value||0.8,turns:skill.turns||3});
+        if (skill.healAll) { const before=a.hp; a.hp=Math.min(a.maxHp,a.hp+skill.healAll); addHealEvent(a.id,a.hp-before); }
+        addBuffEvent(a.id,'defense-up');
+      }
+      msg += ' 全队获得防御增益并恢复HP！';
+    } else if (skill.type === 'healDmgBuff') {
+      for (const a of getAllyUnits()) {
+        const before=a.hp; a.hp=Math.min(a.maxHp,a.hp+(skill.heal||80)); const healed=a.hp-before;
+        applyB(a,{type:skill.buff||'atkUp',stat:skill.stat||'atk',value:skill.value||0.4,turns:skill.turns||3});
+        msg += ` ${a.name} 恢复 ${healed} HP并获得增益！`; addHealEvent(a.id,healed); addBuffEvent(a.id,'buff-up');
+      }
+      const targets = getEnemyUnits();
+      for (const t of targets) dealDmg(t, skill.multiplier, skill.critBonus || 0);
     }
     return { msg };
   },
@@ -1657,6 +1841,20 @@ const Game = {
     logEl.innerHTML = battle.log.slice(-8).map(l => `<div class="log-line">${l}</div>`).join('');
     logEl.scrollTop = logEl.scrollHeight;
 
+    // 检测Boss变身事件（多人模式下服务器推送transformations）
+    if (battle.transformations && battle.transformations.length > 0 && !this._lastTransformKey) {
+      this._lastTransformKey = Date.now();
+      battle.transformations.forEach((t, i) => {
+        setTimeout(() => {
+          this._battleAnnounce(t.announce || '变身！', t.color || '#ff6b6b');
+          this._playTransformEffect(t.unitId, t.appearance, t.phase);
+        }, i * 400 + 100);
+      });
+      setTimeout(() => { this._lastTransformKey = null; }, battle.transformations.length * 400 + 1000);
+    } else if (!battle.transformations || battle.transformations.length === 0) {
+      this._lastTransformKey = null;
+    }
+
     // 当前行动
     const pending = battle.pendingAction;
     const isMyTurn = pending?.isPlayer && pending.ownerId === this.playerId;
@@ -1677,12 +1875,17 @@ const Game = {
   renderUnit(unit) {
     const hpPct = Math.max(0, (unit.hp / unit.maxHp) * 100);
     const mpPct = Math.max(0, (unit.mp / unit.maxMp) * 100);
+    const ragePct = Math.max(0, ((unit.rage || 0) / (unit.maxRage || 100)) * 100);
     const isDead = unit.hp <= 0;
     const isLowHp = !isDead && hpPct < 30;
     const isCritical = !isDead && hpPct < 15;
+    const isRageFull = (unit.rage || 0) >= (unit.maxRage || 100);
     const pending = this.getBattle()?.pendingAction;
     const isActive = pending?.unitId === unit.id;
     const elIcon = { metal: '⚜️', wood: '🌿', earth: '🪨', water: '💧', fire: '🔥' }[unit.element] || '';
+    const isBoss = unit.type === 'boss';
+    const phaseClass = unit.appearance ? ` phase-${unit.appearance}` : '';
+    const bossCrown = isBoss ? '👑' : '';
 
     const buffIcons = (unit.buffs || []).map(b => {
       const names = { defUp: '🛡️', atkUp: '⚔️', spdUp: '⚡', shield: '✨' };
@@ -1694,16 +1897,19 @@ const Game = {
     }).join('');
 
     const hpClass = isCritical ? 'hp-critical' : isLowHp ? 'hp-low' : '';
+    const bossTag = isBoss ? `<span class="boss-tag">P${unit.phase || 1}</span>` : '';
 
     return `
-      <div class="battle-unit ${isDead ? 'dead' : ''} ${isActive ? 'active' : ''}" data-id="${unit.id}" data-isplayer="${unit.isPlayer}" data-element="${unit.element}">
+      <div class="battle-unit ${isDead ? 'dead' : ''} ${isActive ? 'active' : ''}${isRageFull ? ' rage-full' : ''}${phaseClass} ${isBoss ? 'boss-unit' : ''}" data-id="${unit.id}" data-isplayer="${unit.isPlayer}" data-element="${unit.element}">
         <div class="unit-img">
           <img src="${unit.img}" alt="${unit.name}" />
+          ${bossCrown ? `<span class="boss-crown">${bossCrown}</span>` : ''}
         </div>
         <div class="unit-info">
-          <div class="unit-name">${elIcon} ${unit.name} <span class="unit-lv">Lv.${unit.level || 1}</span></div>
+          <div class="unit-name">${elIcon} ${bossCrown}${unit.name} ${bossTag}<span class="unit-lv">Lv.${unit.level || 1}</span></div>
           <div class="unit-hp-bar ${hpClass}"><div class="unit-hp-fill" style="width:${hpPct}%"></div><span class="unit-hp-text">${unit.hp}/${unit.maxHp}</span></div>
           <div class="unit-mp-bar"><div class="unit-mp-fill" style="width:${mpPct}%"></div><span class="unit-mp-text">${unit.mp}/${unit.maxMp}</span></div>
+          ${unit.isPlayer ? `<div class="unit-rage-bar ${isRageFull ? 'rage-full' : ''}"><div class="unit-rage-fill" style="width:${ragePct}%"></div><span class="unit-rage-text">${isRageFull ? '必杀!' : `怒气${Math.round(ragePct)}%`}</span></div>` : ''}
           <div class="unit-buffs">${buffIcons}${debuffIcons}</div>
         </div>
       </div>
@@ -1721,16 +1927,20 @@ const Game = {
     this._actionLocked = false;
 
     let skills = [];
+    let ultimate = null;
     if (this.soloMode) {
       const heroData = this.heroes.find(h => h.id === unit.heroId);
       skills = heroData?.skills || [];
+      ultimate = heroData?.ultimate || unit.ultimate;
     } else {
       const heroData = this.heroes.find(h => h.id === unit.heroId);
       skills = heroData?.skills || [];
+      ultimate = heroData?.ultimate;
     }
 
     const pd = this.room.players.find(p => p.id === this.playerId);
     const items = pd?.items || {};
+    const isRageFull = (unit.rage || 0) >= (unit.maxRage || 100);
 
     let html = `
       <button class="action-btn" data-action="attack">⚔️ 普通攻击</button>
@@ -1743,6 +1953,13 @@ const Game = {
         ${s.name} <span class="mp-cost">MP${s.mp}</span>
       </button>`;
     });
+
+    // 必杀技按钮（怒气满时显示）
+    if (ultimate && isRageFull) {
+      html += `<button class="action-btn ultimate-btn" data-action="ultimate" title="${ultimate.desc}">
+        ${ultimate.name} <span class="mp-cost rage-cost">必杀</span>
+      </button>`;
+    }
 
     html += `
       <button class="action-btn item-btn ${items.hpPotion > 0 ? '' : 'disabled'}" data-action="item" data-item="hpPotion">
@@ -1777,10 +1994,7 @@ const Game = {
           const skill = skills[idx];
           if (!skill) return;
 
-          if (skill.target === 'all' || skill.target === 'self') {
-            this._actionLocked = true;
-            this.performBattleAction({ type: 'skill', skillIndex: idx });
-          } else if (skill.target === 'allEnemy') {
+          if (skill.target === 'all' || skill.target === 'self' || skill.target === 'allEnemy') {
             this._actionLocked = true;
             this.performBattleAction({ type: 'skill', skillIndex: idx });
           } else if (skill.type === 'revive') {
@@ -1794,6 +2008,17 @@ const Game = {
           } else {
             this.startTargetSelect('enemy', (targetId) => {
               this.performBattleAction({ type: 'skill', skillIndex: idx, targetId });
+            });
+          }
+        } else if (action === 'ultimate') {
+          if (!ultimate) return;
+          this._actionLocked = true;
+          // 必杀技根据target类型决定是否需要选目标
+          if (ultimate.target === 'allEnemy' || ultimate.target === 'all' || ultimate.target === 'self') {
+            this.performBattleAction({ type: 'skill', isUltimate: true });
+          } else {
+            this.startTargetSelect('enemy', (targetId) => {
+              this.performBattleAction({ type: 'skill', isUltimate: true, targetId });
             });
           }
         } else if (action === 'item') {
