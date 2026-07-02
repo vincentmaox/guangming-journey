@@ -302,12 +302,19 @@ function tickBuffsDebuffs(unit) {
 function damageCalc(attacker, defender, multiplier = 1, critBonus = 0) {
   const atk = getEffectiveStat(attacker, 'atk');
   const def = getEffectiveStat(defender, 'def');
+  const atkSpd = getEffectiveStat(attacker, 'spd');
+  const defSpd = getEffectiveStat(defender, 'spd');
   const base = Math.max(1, atk - def * 0.5);
   const roll = 0.9 + Math.random() * 0.2;
+  // 闪避判定：速度差决定闪避率，最高15%（速度差20以上），最低0%
+  const spdDiff = defSpd - atkSpd;
+  const dodgeChance = Math.max(0, Math.min(0.15, spdDiff * 0.006));
+  const isDodged = Math.random() < dodgeChance;
+  if (isDodged) return { dmg: 0, isCrit: false, isCounter: false, isWeak: false, isDodged: true };
   const crit = Math.random() < 0.15 + critBonus ? 1.5 : 1;
   const elMult = getElementMultiplier(attacker.element, defender.element);
   const dmg = Math.max(1, Math.round(base * multiplier * roll * crit * elMult));
-  return { dmg, isCrit: crit > 1, isCounter: elMult > 1, isWeak: elMult < 1 };
+  return { dmg, isCrit: crit > 1, isCounter: elMult > 1, isWeak: elMult < 1, isDodged: false };
 }
 
 function getHeroTemplate(id) {
@@ -479,15 +486,19 @@ function performAction(room, unitId, action) {
     const target = battle.units.find(u => u.id === action.targetId);
     if (target && target.hp > 0) {
       const result = damageCalc(unit, target);
-      const shield = target.buffs?.find(b => b.type === 'shield');
-      if (shield) { target.buffs = target.buffs.filter(b => b.type !== 'shield'); logMsg = `${unit.name} 攻击 ${target.name}，被护盾抵挡！`; }
-      else {
-        target.hp = Math.max(0, target.hp - result.dmg);
-        logMsg = `${unit.name} 攻击 ${target.name}，造成 ${result.dmg} 点伤害`;
-        if (result.isCrit) logMsg += '（暴击！）';
-        if (result.isCounter) logMsg += '（属性克制！）';
-        if (result.isWeak) logMsg += '（属性不利）';
-        logMsg += '！';
+      if (result.isDodged) {
+        logMsg = `${unit.name} 攻击 ${target.name}，被闪避了！`;
+      } else {
+        const shield = target.buffs?.find(b => b.type === 'shield');
+        if (shield) { target.buffs = target.buffs.filter(b => b.type !== 'shield'); logMsg = `${unit.name} 攻击 ${target.name}，被护盾抵挡！`; }
+        else {
+          target.hp = Math.max(0, target.hp - result.dmg);
+          logMsg = `${unit.name} 攻击 ${target.name}，造成 ${result.dmg} 点伤害`;
+          if (result.isCrit) logMsg += '（暴击！）';
+          if (result.isCounter) logMsg += '（属性克制！）';
+          if (result.isWeak) logMsg += '（属性不利）';
+          logMsg += '！';
+        }
       }
     }
   } else if (action.type === 'skill') {
@@ -528,9 +539,16 @@ function executeSkill(battle, unit, skill, targetId) {
     const t = battle.units.find(u => u.id === targetId);
     if (t && t.hp > 0) {
       const r = damageCalc(unit, t, skill.multiplier, skill.critBonus || 0);
-      t.hp = Math.max(0, t.hp - r.dmg);
-      msg += ` 对 ${t.name} 造成 ${r.dmg} 点伤害`;
-      if (r.isCrit) msg += '（暴击！）'; if (r.isCounter) msg += '（属性克制！）'; msg += '！';
+      if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; }
+      else {
+        const shield = t.buffs?.find(b => b.type === 'shield');
+        if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; }
+        else {
+          t.hp = Math.max(0, t.hp - r.dmg);
+          msg += ` 对 ${t.name} 造成 ${r.dmg} 点伤害`;
+          if (r.isCrit) msg += '（暴击！）'; if (r.isCounter) msg += '（属性克制！）'; msg += '！';
+        }
+      }
     }
   } else if (skill.type === 'heal') {
     const targets = skill.target === 'all'
@@ -561,8 +579,13 @@ function executeSkill(battle, unit, skill, targetId) {
     const t = battle.units.find(u => u.id === targetId);
     if (t && t.hp > 0) {
       const r = damageCalc(unit, t, skill.multiplier);
-      t.hp = Math.max(0, t.hp - r.dmg); unit.hp = Math.min(unit.maxHp, unit.hp + skill.healSelf);
-      msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害，自身恢复 ${skill.healSelf} HP！`;
+      unit.hp = Math.min(unit.maxHp, unit.hp + skill.healSelf);
+      if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！自身恢复 ${skill.healSelf} HP！`; }
+      else {
+        const shield = t.buffs?.find(b => b.type === 'shield');
+        if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！自身恢复 ${skill.healSelf} HP！`; }
+        else { t.hp = Math.max(0, t.hp - r.dmg); msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害，自身恢复 ${skill.healSelf} HP！`; }
+      }
     }
   } else if (skill.type === 'revive') {
     const t = battle.units.find(u => u.id === targetId);
@@ -578,9 +601,16 @@ function executeSkill(battle, unit, skill, targetId) {
     const t = battle.units.find(u => u.id === targetId);
     if (t && t.hp > 0) {
       const r = damageCalc(unit, t, skill.multiplier);
-      t.hp = Math.max(0, t.hp - r.dmg);
-      applyDebuff(t, { type: skill.debuff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
-      msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害并减益！`;
+      if (r.isDodged) { msg += ` ${t.name} 闪避了攻击！`; }
+      else {
+        const shield = t.buffs?.find(b => b.type === 'shield');
+        if (shield) { t.buffs = t.buffs.filter(b => b.type !== 'shield'); msg += ` 被 ${t.name} 的护盾抵挡！`; }
+        else {
+          t.hp = Math.max(0, t.hp - r.dmg);
+          applyDebuff(t, { type: skill.debuff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
+          msg += ` 对 ${t.name} 造成 ${r.dmg} 伤害并减益！`;
+        }
+      }
     }
   }
   return msg;

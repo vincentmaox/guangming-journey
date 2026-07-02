@@ -965,6 +965,12 @@ const Game = {
     el.classList.add('hit');
     setTimeout(() => el.classList.remove('hit'), 450);
   },
+  _dodgeEffect(targetId) {
+    const el = this._unitEl(targetId);
+    if (!el) return;
+    el.classList.add('dodging');
+    setTimeout(() => el.classList.remove('dodging'), 500);
+  },
   _flashGlow(targetId, color = '6bcb77') {
     const el = this._unitEl(targetId);
     if (!el) return;
@@ -1104,14 +1110,20 @@ const Game = {
     const calcDmg = (atk, def, mult = 1, critB = 0) => {
       const a = getEff(atk, 'atk');
       const d = getEff(def, 'def');
+      const aSpd = getEff(atk, 'spd');
+      const dSpd = getEff(def, 'spd');
       const base = Math.max(1, a - d * 0.5);
       const roll = 0.9 + Math.random() * 0.2;
+      // 闪避判定：速度差决定闪避率，最高15%
+      const spdDiff = dSpd - aSpd;
+      const dodgeChance = Math.max(0, Math.min(0.15, spdDiff * 0.006));
+      if (Math.random() < dodgeChance) return { dmg: 0, isCrit: false, isCounter: false, isWeak: false, isDodged: true, comboBonus: 0 };
       const crit = Math.random() < (0.15 + critB) ? 1.5 : 1;
       const em = elMult(atk.element, def.element);
       // Combo加成：玩家连击每层+5%，最多+50%
       const comboBonus = atk.isPlayer ? Math.min(0.5, (battle.combo || 0) * 0.05) : 0;
       const dmg = Math.max(1, Math.round(base * mult * roll * crit * em * (1 + comboBonus)));
-      return { dmg, isCrit: crit > 1, isCounter: em > 1, isWeak: em < 1, comboBonus };
+      return { dmg, isCrit: crit > 1, isCounter: em > 1, isWeak: em < 1, isDodged: false, comboBonus };
     };
 
     // 记录伤害事件
@@ -1133,21 +1145,27 @@ const Game = {
     if (action.type === 'attack') {
       const target = battle.units.find(u => u.id === action.targetId);
       if (target && target.hp > 0) {
-        const shield = target.buffs?.find(b => b.type === 'shield');
-        if (shield) {
-          target.buffs = target.buffs.filter(b => b.type !== 'shield');
-          logMsg = `${unit.name} 攻击 ${target.name}，被护盾抵挡！`;
-          animEvents.push({ kind: 'shield', targetId: target.id });
+        const result = calcDmg(unit, target);
+        if (result.isDodged) {
+          logMsg = `${unit.name} 攻击 ${target.name}，被闪避了！`;
+          animEvents.push({ kind: 'miss', targetId: target.id });
+          if (unit.isPlayer) battle.combo = 0; // 闪避重置combo
         } else {
-          const result = calcDmg(unit, target);
-          target.hp = Math.max(0, target.hp - result.dmg);
-          logMsg = `${unit.name} 攻击 ${target.name}，造成 ${result.dmg} 点伤害`;
-          if (result.isCrit) logMsg += '（暴击！）';
-          if (result.isCounter) logMsg += '（属性克制！）';
-          if (result.isWeak) logMsg += '（属性不利）';
-          logMsg += '！';
-          addDmgEvent(target.id, result);
-          AudioSystem.playSfx('hit');
+          const shield = target.buffs?.find(b => b.type === 'shield');
+          if (shield) {
+            target.buffs = target.buffs.filter(b => b.type !== 'shield');
+            logMsg = `${unit.name} 攻击 ${target.name}，被护盾抵挡！`;
+            animEvents.push({ kind: 'shield', targetId: target.id });
+          } else {
+            target.hp = Math.max(0, target.hp - result.dmg);
+            logMsg = `${unit.name} 攻击 ${target.name}，造成 ${result.dmg} 点伤害`;
+            if (result.isCrit) logMsg += '（暴击！）';
+            if (result.isCounter) logMsg += '（属性克制！）';
+            if (result.isWeak) logMsg += '（属性不利）';
+            logMsg += '！';
+            addDmgEvent(target.id, result);
+            AudioSystem.playSfx('hit');
+          }
         }
       }
     } else if (action.type === 'skill') {
@@ -1162,7 +1180,9 @@ const Game = {
         unit.mp -= skill.mp;
         skillAnim = skill.anim; // 记录技能特效名
         const skillResult = this.executeSkillLogic(battle, unit, skill, action.targetId, {
-          addDmgEvent, addHealEvent, addBuffEvent, addDebuffEvent
+          addDmgEvent, addHealEvent, addBuffEvent, addDebuffEvent,
+          addMissEvent: (tid) => animEvents.push({ kind: 'miss', targetId: tid }),
+          addShieldEvent: (tid) => animEvents.push({ kind: 'shield', targetId: tid }),
         });
         logMsg = skillResult.msg;
         if (skill.type === 'heal' || skill.type === 'healBuff') {
@@ -1277,6 +1297,7 @@ const Game = {
             this._floatText(ev.targetId, '护盾抵挡!', '#4d96ff');
           } else if (ev.kind === 'miss') {
             this._floatNum(ev.targetId, 0, 'miss');
+            this._dodgeEffect(ev.targetId);
             battle.combo = 0;
           }
         }, delay);
@@ -1284,7 +1305,8 @@ const Game = {
     }, 280);
 
     // 3. 动画播放完毕后，更新UI并推进回合
-    const totalAnimTime = 280 + animEvents.length * 80 + 500;
+    const spd = SettingsSystem.data.battleSpeed || 1;
+    const totalAnimTime = (280 + animEvents.length * 80 + 500) / spd;
     setTimeout(() => {
       battle.pendingAction = null;
 
@@ -1304,7 +1326,7 @@ const Game = {
   },
 
   executeSkillLogic(battle, unit, skill, targetId, callbacks = {}) {
-    const { addDmgEvent = () => {}, addHealEvent = () => {}, addBuffEvent = () => {}, addDebuffEvent = () => {} } = callbacks;
+    const { addDmgEvent = () => {}, addHealEvent = () => {}, addBuffEvent = () => {}, addDebuffEvent = () => {}, addMissEvent = () => {}, addShieldEvent = () => {} } = callbacks;
     let msg = `${unit.name} 使用 【${skill.name}】！`;
     const applyB = (u, b) => {
       u.buffs = u.buffs || [];
@@ -1334,24 +1356,42 @@ const Game = {
     const calcDmg = (atk, def, mult = 1, critB = 0) => {
       const a = getEff(atk, 'atk');
       const d = getEff(def, 'def');
+      const aSpd = getEff(atk, 'spd');
+      const dSpd = getEff(def, 'spd');
       const base = Math.max(1, a - d * 0.5);
       const roll = 0.9 + Math.random() * 0.2;
+      const spdDiff = dSpd - aSpd;
+      const dodgeChance = Math.max(0, Math.min(0.15, spdDiff * 0.006));
+      if (Math.random() < dodgeChance) return { dmg: 0, isCrit: false, isCounter: false, isWeak: false, isDodged: true };
       const crit = Math.random() < (0.15 + critB) ? 1.5 : 1;
       const em = elMult(atk.element, def.element);
       const dmg = Math.max(1, Math.round(base * mult * roll * crit * em));
-      return { dmg, isCrit: crit > 1, isCounter: em > 1, isWeak: em < 1 };
+      return { dmg, isCrit: crit > 1, isCounter: em > 1, isWeak: em < 1, isDodged: false };
     };
 
     if (skill.type === 'dmg') {
       const target = battle.units.find(u => u.id === targetId);
       if (target && target.hp > 0) {
         const result = calcDmg(unit, target, skill.multiplier, skill.critBonus || 0);
-        target.hp = Math.max(0, target.hp - result.dmg);
-        msg += ` 对 ${target.name} 造成 ${result.dmg} 点伤害`;
-        if (result.isCrit) msg += '（暴击！）';
-        if (result.isCounter) msg += '（属性克制！）';
-        msg += '！';
-        addDmgEvent(target.id, result);
+        if (result.isDodged) {
+          msg += ` ${target.name} 闪避了攻击！`;
+          if (unit.isPlayer) battle.combo = 0;
+          addMissEvent(target.id);
+        } else {
+          const shield = target.buffs?.find(b => b.type === 'shield');
+          if (shield) {
+            target.buffs = target.buffs.filter(b => b.type !== 'shield');
+            msg += ` 被 ${target.name} 的护盾抵挡！`;
+            addShieldEvent(target.id);
+          } else {
+            target.hp = Math.max(0, target.hp - result.dmg);
+            msg += ` 对 ${target.name} 造成 ${result.dmg} 点伤害`;
+            if (result.isCrit) msg += '（暴击！）';
+            if (result.isCounter) msg += '（属性克制！）';
+            msg += '！';
+            addDmgEvent(target.id, result);
+          }
+        }
       }
     } else if (skill.type === 'heal') {
       if (skill.target === 'all') {
@@ -1412,13 +1452,26 @@ const Game = {
       const target = battle.units.find(u => u.id === targetId);
       if (target && target.hp > 0) {
         const result = calcDmg(unit, target, skill.multiplier);
-        target.hp = Math.max(0, target.hp - result.dmg);
         const before = unit.hp;
         unit.hp = Math.min(unit.maxHp, unit.hp + skill.healSelf);
         const healed = unit.hp - before;
-        msg += ` 对 ${target.name} 造成 ${result.dmg} 伤害，自身恢复 ${healed} HP！`;
-        addDmgEvent(target.id, result);
         addHealEvent(unit.id, healed);
+        if (result.isDodged) {
+          msg += ` ${target.name} 闪避了攻击！自身恢复 ${healed} HP！`;
+          if (unit.isPlayer) battle.combo = 0;
+          addMissEvent(target.id);
+        } else {
+          const shield = target.buffs?.find(b => b.type === 'shield');
+          if (shield) {
+            target.buffs = target.buffs.filter(b => b.type !== 'shield');
+            msg += ` 被 ${target.name} 的护盾抵挡！自身恢复 ${healed} HP！`;
+            addShieldEvent(target.id);
+          } else {
+            target.hp = Math.max(0, target.hp - result.dmg);
+            msg += ` 对 ${target.name} 造成 ${result.dmg} 伤害，自身恢复 ${healed} HP！`;
+            addDmgEvent(target.id, result);
+          }
+        }
       }
     } else if (skill.type === 'revive') {
       const target = battle.units.find(u => u.id === targetId);
@@ -1444,11 +1497,24 @@ const Game = {
       const target = battle.units.find(u => u.id === targetId);
       if (target && target.hp > 0) {
         const result = calcDmg(unit, target, skill.multiplier);
-        target.hp = Math.max(0, target.hp - result.dmg);
-        applyD(target, { type: skill.debuff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
-        msg += ` 对 ${target.name} 造成 ${result.dmg} 伤害并降低攻击力！`;
-        addDmgEvent(target.id, result);
-        addDebuffEvent(target.id, skill.debuff);
+        if (result.isDodged) {
+          msg += ` ${target.name} 闪避了攻击！`;
+          if (unit.isPlayer) battle.combo = 0;
+          addMissEvent(target.id);
+        } else {
+          const shield = target.buffs?.find(b => b.type === 'shield');
+          if (shield) {
+            target.buffs = target.buffs.filter(b => b.type !== 'shield');
+            msg += ` 被 ${target.name} 的护盾抵挡！`;
+            addShieldEvent(target.id);
+          } else {
+            target.hp = Math.max(0, target.hp - result.dmg);
+            applyD(target, { type: skill.debuff, stat: skill.stat || 'atk', value: skill.value, turns: skill.turns });
+            msg += ` 对 ${target.name} 造成 ${result.dmg} 伤害并降低攻击力！`;
+            addDmgEvent(target.id, result);
+            addDebuffEvent(target.id, skill.debuff);
+          }
+        }
       }
     }
     return { msg };
@@ -1620,11 +1686,11 @@ const Game = {
 
     const buffIcons = (unit.buffs || []).map(b => {
       const names = { defUp: '🛡️', atkUp: '⚔️', spdUp: '⚡', shield: '✨' };
-      return `<span class="buff-icon" title="${b.type}">${names[b.type] || '⬆️'}</span>`;
+      return `<span class="buff-icon" title="${b.type}">${names[b.type] || '⬆️'}<span class="buff-turn">${b.turns}</span></span>`;
     }).join('');
     const debuffIcons = (unit.debuffs || []).map(d => {
       const names = { defDown: '💔', atkDown: '🗡️', spdDown: '🐢', stun: '💫' };
-      return `<span class="debuff-icon" title="${d.type}">${names[d.type] || '⬇️'}</span>`;
+      return `<span class="debuff-icon" title="${d.type}">${names[d.type] || '⬇️'}<span class="buff-turn">${d.turns}</span></span>`;
     }).join('');
 
     const hpClass = isCritical ? 'hp-critical' : isLowHp ? 'hp-low' : '';

@@ -1752,6 +1752,67 @@ button:active { transform: translateY(1px); }
   100% { transform: translateX(0); }
 }
 
+/* 闪避动画 - 快速侧移+残影 */
+.battle-unit.dodging {
+  animation: dodgeRoll 0.5s ease-out;
+}
+@keyframes dodgeRoll {
+  0% { transform: translateX(0) rotate(0); opacity: 1; }
+  25% { transform: translateX(-20px) rotate(-15deg); opacity: 0.7; }
+  50% { transform: translateX(-25px) translateY(-10px) rotate(-25deg); opacity: 0.5; }
+  75% { transform: translateX(-10px) rotate(-5deg); opacity: 0.8; }
+  100% { transform: translateX(0) rotate(0); opacity: 1; }
+}
+.battle-enemies .battle-unit.dodging {
+  animation: dodgeRollRight 0.5s ease-out;
+}
+@keyframes dodgeRollRight {
+  0% { transform: translateX(0) rotate(0); opacity: 1; }
+  25% { transform: translateX(20px) rotate(15deg); opacity: 0.7; }
+  50% { transform: translateX(25px) translateY(-10px) rotate(25deg); opacity: 0.5; }
+  75% { transform: translateX(10px) rotate(5deg); opacity: 0.8; }
+  100% { transform: translateX(0) rotate(0); opacity: 1; }
+}
+
+/* Buff/Debuff 回合数字 */
+.buff-icon, .debuff-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.buff-turn {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  font-size: 0.5rem;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid rgba(255,255,255,0.3);
+  min-width: 12px;
+}
+
+/* MISS文字增强 */
+.damage-number.miss {
+  color: #a0aec0;
+  font-size: 1.3rem;
+  font-style: italic;
+  animation: missFloat 1.2s ease-out forwards;
+}
+@keyframes missFloat {
+  0% { opacity: 0; transform: translateY(0) scale(0.5) rotate(-10deg); }
+  20% { opacity: 1; transform: translateY(-15px) scale(1.1) rotate(-5deg); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.9) rotate(0deg); }
+}
+
 /* 技能特效粒子容器 */
 .skill-particles {
   position: absolute;
