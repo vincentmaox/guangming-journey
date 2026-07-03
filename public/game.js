@@ -2053,32 +2053,81 @@ const Game = {
     const items = pd?.items || {};
     const isRageFull = (unit.rage || 0) >= (unit.maxRage || 100);
 
-    let html = `
-      <button class="action-btn" data-action="attack">⚔️ 普通攻击</button>
-      <button class="action-btn" data-action="defend">🛡️ 防御</button>
-    `;
-
+    // 技能按钮HTML
+    let skillsHtml = '';
     skills.forEach((s, i) => {
       const canUse = unit.mp >= s.mp;
-      html += `<button class="action-btn skill-btn ${canUse ? '' : 'disabled'}" data-action="skill" data-index="${i}" title="${s.desc}">
-        ${s.name} <span class="mp-cost">MP${s.mp}</span>
+      skillsHtml += `<button class="action-btn skill-btn ${canUse ? '' : 'disabled'}" data-action="skill" data-index="${i}" title="${s.desc}">
+        <span class="btn-icon">${s.name.split(' ')[0]}</span>
+        <span class="btn-text">${s.name.split(' ').slice(1).join(' ')}</span>
+        <span class="btn-cost">MP${s.mp}</span>
       </button>`;
     });
 
-    // 必杀技按钮（怒气满时显示）
+    // 必杀技按钮
+    let ultimateHtml = '';
     if (ultimate && isRageFull) {
-      html += `<button class="action-btn ultimate-btn" data-action="ultimate" title="${ultimate.desc}">
-        ${ultimate.name} <span class="mp-cost rage-cost">必杀</span>
+      ultimateHtml = `<button class="action-btn ultimate-btn" data-action="ultimate" title="${ultimate.desc}">
+        <span class="btn-icon">${ultimate.name.split(' ')[0]}</span>
+        <span class="btn-text">${ultimate.name.split(' ').slice(1).join(' ')}</span>
+        <span class="btn-cost rage-cost">必杀</span>
       </button>`;
     }
 
-    html += `
-      <button class="action-btn item-btn ${items.hpPotion > 0 ? '' : 'disabled'}" data-action="item" data-item="hpPotion">
-        🧪 生命药水(${items.hpPotion || 0})
-      </button>
-      <button class="action-btn item-btn ${items.mpPotion > 0 ? '' : 'disabled'}" data-action="item" data-item="mpPotion">
-        🔵 法力药水(${items.mpPotion || 0})
-      </button>
+    // 第二行：必杀技+道具（有必杀时），或只有道具（无必杀时）
+    let row2 = '';
+    if (ultimateHtml) {
+      row2 = `<div class="action-row">
+        <div class="action-group ultimate-group">
+          ${ultimateHtml}
+        </div>
+        <div class="action-group items-group">
+          <button class="action-btn item-btn hp-item ${items.hpPotion > 0 ? '' : 'disabled'}" data-action="item" data-item="hpPotion">
+            <span class="btn-icon">🧪</span>
+            <span class="btn-text">生命</span>
+            <span class="btn-cost">${items.hpPotion || 0}</span>
+          </button>
+          <button class="action-btn item-btn mp-item ${items.mpPotion > 0 ? '' : 'disabled'}" data-action="item" data-item="mpPotion">
+            <span class="btn-icon">🔵</span>
+            <span class="btn-text">法力</span>
+            <span class="btn-cost">${items.mpPotion || 0}</span>
+          </button>
+        </div>
+      </div>`;
+    } else {
+      row2 = `<div class="action-row action-row-items-only">
+        <div class="action-group items-group">
+          <button class="action-btn item-btn hp-item ${items.hpPotion > 0 ? '' : 'disabled'}" data-action="item" data-item="hpPotion">
+            <span class="btn-icon">🧪</span>
+            <span class="btn-text">生命药水</span>
+            <span class="btn-cost">${items.hpPotion || 0}</span>
+          </button>
+          <button class="action-btn item-btn mp-item ${items.mpPotion > 0 ? '' : 'disabled'}" data-action="item" data-item="mpPotion">
+            <span class="btn-icon">🔵</span>
+            <span class="btn-text">法力药水</span>
+            <span class="btn-cost">${items.mpPotion || 0}</span>
+          </button>
+        </div>
+      </div>`;
+    }
+
+    const html = `
+      <div class="action-row">
+        <div class="action-group basic-group">
+          <button class="action-btn attack-btn" data-action="attack">
+            <span class="btn-icon">⚔️</span>
+            <span class="btn-text">攻击</span>
+          </button>
+          <button class="action-btn defend-btn" data-action="defend">
+            <span class="btn-icon">🛡️</span>
+            <span class="btn-text">防御</span>
+          </button>
+        </div>
+        <div class="action-group skills-group">
+          ${skillsHtml}
+        </div>
+      </div>
+      ${row2}
     `;
 
     container.innerHTML = html;

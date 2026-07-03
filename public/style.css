@@ -346,10 +346,12 @@ button:active { transform: translateY(1px); }
 
 .battle-header {
   display: flex; justify-content: space-between;
-  padding: 10px 20px;
+  padding: 10px 60px 10px 20px;
   background: rgba(11,16,34,0.85);
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
+  position: relative;
+  z-index: 5;
 }
 
 .battle-arena {
@@ -561,41 +563,6 @@ button:active { transform: translateY(1px); }
   100% { box-shadow: 0 0 0 2px rgba(255,215,0,0.8), 0 0 22px rgba(255,140,0,0.6); }
 }
 
-/* ===== 必杀技按钮 ===== */
-.ultimate-btn {
-  background: linear-gradient(135deg, #ff4500, #ff8c00, #ffd700) !important;
-  border-color: #ffd700 !important;
-  color: #fff !important;
-  font-weight: 900 !important;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-  animation: ultimateBtnPulse 0.6s ease-in-out infinite alternate;
-  position: relative;
-  overflow: hidden;
-}
-.ultimate-btn::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -100%;
-  width: 100%;
-  height: 200%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  animation: ultimateShine 2s linear infinite;
-}
-@keyframes ultimateBtnPulse {
-  0% { box-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 16px rgba(255,69,0,0.3); transform: scale(1); }
-  100% { box-shadow: 0 0 16px rgba(255,215,0,0.9), 0 0 32px rgba(255,69,0,0.6); transform: scale(1.04); }
-}
-@keyframes ultimateShine {
-  0% { left: -100%; }
-  100% { left: 200%; }
-}
-.rage-cost {
-  color: #fff !important;
-  background: rgba(0,0,0,0.3) !important;
-  text-shadow: 0 0 4px #ff6b00;
-}
-
 /* ===== Boss单位标识 ===== */
 .battle-unit.boss-unit {
   border: 2px solid rgba(255,50,50,0.5);
@@ -791,11 +758,11 @@ button:active { transform: translateY(1px); }
 .battle-log {
   background: rgba(11,16,34,0.9);
   border-top: 1px solid var(--border);
-  padding: 6px 12px;
-  height: 70px;
+  padding: 8px 16px;
+  height: 90px;
   overflow-y: auto;
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  line-height: 1.6;
   flex-shrink: 0;
 }
 .battle-log::-webkit-scrollbar { width: 4px; }
@@ -807,18 +774,20 @@ button:active { transform: translateY(1px); }
 .log-entry.heal { color: #99ff99; }
 
 .battle-actions {
-  background: rgba(11,16,34,0.95);
-  border-top: 1px solid var(--border);
-  padding: 8px 12px;
+  background: linear-gradient(180deg, rgba(11,16,34,0.92), rgba(15,22,48,0.98));
+  border-top: 2px solid rgba(255,217,61,0.25);
+  padding: 10px 16px 12px;
   flex-shrink: 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
 }
 
 .turn-hint {
   text-align: center;
   font-size: 0.85rem;
   color: var(--primary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-weight: 700;
+  text-shadow: 0 0 8px rgba(255,217,61,0.4);
 }
 
 .turn-timer {
@@ -827,56 +796,182 @@ button:active { transform: translateY(1px); }
   margin-left: 4px;
 }
 
-.action-buttons {
-  display: flex; gap: 4px; justify-content: center;
-  flex-wrap: wrap;
-  max-width: 100%;
+/* 按钮行 */
+.action-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: stretch;
+  margin-bottom: 8px;
+}
+.action-row:last-child { margin-bottom: 0; }
+
+/* 按钮组 */
+.action-group {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.action-group.basic-group { flex-shrink: 0; }
+.action-group.skills-group { flex: 1; justify-content: center; }
+.action-group.items-group { gap: 6px; flex-shrink: 0; }
+.action-group.ultimate-group { flex: 1; justify-content: center; }
+
+/* 无必杀时道具行居中 */
+.action-row-items-only {
+  justify-content: center;
 }
 
+/* 基础按钮样式 */
 .action-btn {
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  min-width: 56px;
-  white-space: nowrap;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  transition: transform 0.1s, opacity 0.2s;
-  flex-shrink: 0;
-}
-.action-btn.attack { background: linear-gradient(135deg, #e8506b, #c9304b); color: #fff; }
-.action-btn.skill { background: linear-gradient(135deg, #4a9eff, #2d7dd2); color: #fff; }
-.action-btn.defend { background: linear-gradient(135deg, #5e9a2a, #4a7a1f); color: #fff; }
-.action-btn.item-btn { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; }
-.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.skill-btn {
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 6px 8px;
-  font-size: 0.72rem;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+  flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   position: relative;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  min-width: 64px;
   line-height: 1.2;
 }
-.skill-btn::before {
+
+.action-btn::after {
   content: '';
   position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
 }
-.skill-btn:hover::before {
-  left: 100%;
+
+.action-btn:hover:not(:disabled):not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  filter: brightness(1.15);
 }
-.skill-btn .skill-mp {
-  font-size: 0.65rem; opacity: 0.8;
-  margin-top: 2px;
+
+.action-btn:active:not(:disabled):not(.disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
-.skill-btn:disabled {
-  filter: grayscale(0.5);
+
+.action-btn.disabled, .action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+/* 按钮内部元素 */
+.btn-icon { font-size: 1.5rem; line-height: 1; display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); }
+.btn-text { font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: block; }
+.btn-cost {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(0,0,0,0.35);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  display: block;
+  margin-top: 1px;
+}
+
+/* 攻击按钮 - 红色 */
+.attack-btn {
+  background: linear-gradient(180deg, #ff6b6b, #c0392b);
+  border-color: rgba(255,107,107,0.4);
+  min-width: 70px;
+}
+/* 防御按钮 - 蓝色 */
+.defend-btn {
+  background: linear-gradient(180deg, #5dade2, #2471a3);
+  border-color: rgba(93,173,226,0.4);
+  min-width: 70px;
+}
+/* 技能按钮 - 紫色/蓝色 */
+.skill-btn {
+  background: linear-gradient(180deg, #7d3cff, #4a1fb8);
+  border-color: rgba(125,60,255,0.4);
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+}
+.skill-btn .btn-icon { font-size: 1.3rem; }
+.skill-btn .btn-text { font-size: 0.72rem; }
+.skill-btn .btn-cost { font-size: 0.6rem; padding: 1px 5px; }
+
+/* 道具按钮 - 区分HP和MP */
+.item-btn {
+  min-width: 80px;
+}
+.hp-item {
+  background: linear-gradient(180deg, #e74c3c, #c0392b);
+  border-color: rgba(231,76,60,0.4);
+}
+.mp-item {
+  background: linear-gradient(180deg, #3498db, #2471a3);
+  border-color: rgba(52,152,219,0.4);
+}
+.item-btn .btn-cost {
+  background: rgba(255,255,255,0.25);
+}
+
+/* 无必杀时道具行居中，按钮适当放大 */
+.action-row-items-only .items-group {
+  gap: 10px;
+}
+.action-row-items-only .item-btn {
+  min-width: 90px;
+  padding: 10px 16px;
+}
+
+/* 必杀技按钮 - 金橙色火焰 */
+.ultimate-btn {
+  background: linear-gradient(180deg, #ff6b35, #d63031, #ffd700);
+  background-size: 100% 200%;
+  border-color: #ffd700 !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  animation: ultimatePulse 1s ease-in-out infinite alternate;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+}
+.ultimate-btn .btn-icon { font-size: 1.5rem; }
+.ultimate-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 100%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: ultimateShine 2s linear infinite;
+}
+.ultimate-btn .btn-cost {
+  background: rgba(0,0,0,0.5);
+  color: #ffd700;
+  text-shadow: 0 0 6px #ff6b00;
+}
+@keyframes ultimatePulse {
+  0% { box-shadow: 0 0 8px rgba(255,107,53,0.5), 0 0 16px rgba(255,215,0,0.3); background-position: 0% 0%; }
+  100% { box-shadow: 0 0 20px rgba(255,107,53,0.8), 0 0 32px rgba(255,215,0,0.5); background-position: 0% 100%; }
+}
+@keyframes ultimateShine {
+  0% { left: -100%; }
+  100% { left: 200%; }
 }
 
 /* ===== 战斗结果 ===== */
@@ -1632,26 +1727,34 @@ button:active { transform: translateY(1px); }
 /* ===== 桌面版战斗模式：聊天窗口移到右上角避免遮挡操作区 ===== */
 body.on-battle .chat-panel {
   bottom: auto !important;
-  top: 50px !important;
-  right: 12px !important;
-  width: 40px !important;
-  height: 40px !important;
-  max-height: 40px !important;
+  top: 6px !important;
+  right: 10px !important;
+  width: 38px !important;
+  height: 38px !important;
+  max-height: 38px !important;
   overflow: hidden !important;
   border-radius: 50% !important;
   padding: 0 !important;
+  z-index: 200 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
 }
 body.on-battle .chat-panel .chat-header {
   padding: 0 !important;
-  height: 40px !important;
+  height: 38px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.1rem !important;
+  font-size: 0 !important;
   cursor: pointer !important;
+  line-height: 1 !important;
+}
+body.on-battle .chat-panel .chat-header::before {
+  content: '💬';
+  font-size: 1.2rem;
+  line-height: 1;
 }
 body.on-battle .chat-panel .chat-header span:first-child {
-  font-size: 1.1rem !important;
+  display: none !important;
 }
 body.on-battle .chat-panel .chat-header span:not(:first-child),
 body.on-battle .chat-panel .chat-badge {
@@ -1666,6 +1769,7 @@ body.on-battle .chat-panel:not(.collapsed) {
   max-height: 50vh !important;
   border-radius: 12px !important;
   overflow: hidden !important;
+  top: 50px !important;
 }
 body.on-battle .chat-panel:not(.collapsed) .chat-header {
   padding: 10px 14px !important;
@@ -1673,7 +1777,11 @@ body.on-battle .chat-panel:not(.collapsed) .chat-header {
   font-size: 0.9rem !important;
   justify-content: space-between !important;
 }
+body.on-battle .chat-panel:not(.collapsed) .chat-header::before {
+  display: none;
+}
 body.on-battle .chat-panel:not(.collapsed) .chat-header span:first-child {
+  display: inline !important;
   font-size: 0.9rem !important;
 }
 body.on-battle .chat-panel:not(.collapsed) .chat-header span:not(:first-child),
@@ -1791,30 +1899,74 @@ body.on-battle .chat-panel .chat-messages {
     flex-shrink: 0 !important;
   }
 
-  /* 战斗操作区 - 固定底部，按钮加大 */
+  /* 战斗操作区 - 手机端优化 */
   .battle-actions {
-    padding: 6px 10px !important;
+    padding: 6px 8px !important;
     padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
-    border-top-width: 1px !important;
+    border-top-width: 2px !important;
     flex-shrink: 0 !important;
   }
-  .turn-hint { font-size: 0.75rem !important; margin-bottom: 3px !important; font-weight: 600 !important; }
-  .action-buttons { gap: 4px !important; }
+  .turn-hint { font-size: 0.75rem !important; margin-bottom: 4px !important; font-weight: 700 !important; }
+
+  /* 手机端：按钮行紧凑排列 */
+  .action-row {
+    gap: 5px !important;
+    margin-bottom: 4px !important;
+  }
+  .action-group {
+    gap: 4px !important;
+  }
+  .action-group.skills-group {
+    flex: 1 !important;
+  }
+  .action-group.ultimate-group {
+    flex: 1 !important;
+  }
+
+  /* 手机端按钮：更紧凑，触控友好 */
   .action-btn {
-    padding: 8px 4px !important;
-    border-radius: 6px !important;
-    font-size: 0.75rem !important;
+    padding: 6px 4px !important;
+    border-radius: 8px !important;
+    border-width: 1.5px !important;
     min-width: 0 !important;
     flex: 1 !important;
-    border-width: 1px !important;
-    font-weight: 600 !important;
+    gap: 1px !important;
   }
+  .btn-icon { font-size: 1.1rem !important; }
+  .btn-text { font-size: 0.62rem !important; }
+  .btn-cost { font-size: 0.52rem !important; padding: 0 3px !important; margin-top: 0 !important; }
+
+  /* 攻击/防御按钮固定宽度 */
+  .attack-btn, .defend-btn {
+    flex: 0 0 52px !important;
+    padding: 6px 2px !important;
+  }
+  .attack-btn .btn-icon, .defend-btn .btn-icon { font-size: 1.2rem !important; }
+
+  /* 技能按钮 */
   .skill-btn {
-    padding: 6px 6px !important;
-    font-size: 0.65rem !important;
-    border-radius: 6px !important;
+    padding: 5px 3px !important;
   }
-  .skill-btn .mp-cost { font-size: 0.55rem !important; }
+  .skill-btn .btn-icon { font-size: 0.95rem !important; }
+  .skill-btn .btn-text { font-size: 0.58rem !important; }
+  .skill-btn .btn-cost { font-size: 0.5rem !important; }
+
+  /* 道具按钮 */
+  .item-btn {
+    flex: 0 0 60px !important;
+    padding: 6px 4px !important;
+  }
+  .item-btn .btn-icon { font-size: 1.1rem !important; }
+  .action-row-items-only .item-btn {
+    flex: 0 0 80px !important;
+    padding: 8px 6px !important;
+  }
+
+  /* 必杀技按钮 */
+  .ultimate-btn {
+    padding: 6px 4px !important;
+  }
+  .ultimate-btn .btn-icon { font-size: 1rem !important; }
 
   /* 技能详情气泡 */
   .skill-tooltip, .target-skill-info {
@@ -2007,8 +2159,16 @@ body.on-battle .chat-panel .chat-messages {
 @media (max-width: 380px) {
   .battle-unit img { width: 42px !important; height: 52px !important; min-width: 42px !important; max-width: 42px !important; }
   .battle-unit { padding: 5px 6px !important; gap: 4px !important; }
-  .action-btn { padding: 7px 3px !important; font-size: 0.7rem !important; }
-  .skill-btn { padding: 5px 4px !important; font-size: 0.6rem !important; }
+  .action-btn { padding: 5px 2px !important; border-radius: 7px !important; gap: 1px !important; }
+  .btn-icon { font-size: 1rem !important; }
+  .btn-text { font-size: 0.58rem !important; }
+  .btn-cost { font-size: 0.48rem !important; padding: 0 2px !important; }
+  .attack-btn, .defend-btn { flex: 0 0 44px !important; }
+  .skill-btn { padding: 4px 2px !important; }
+  .skill-btn .btn-icon { font-size: 0.85rem !important; }
+  .skill-btn .btn-text { font-size: 0.55rem !important; }
+  .item-btn { flex: 0 0 52px !important; padding: 4px 2px !important; }
+  .action-row-items-only .item-btn { flex: 0 0 70px !important; }
   .unit-name { font-size: 0.72rem !important; }
   .unit-hp-text, .unit-mp-text { font-size: 0.6rem !important; }
 }
