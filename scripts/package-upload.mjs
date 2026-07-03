@@ -7,7 +7,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const outDir = path.join(root, 'dist-upload');
 const outFile = path.join(outDir, `${pkg.name || 'game'}-upload.zip`);
 const EXCLUDED_DIRS = new Set(['node_modules', '.git', '.playwright-cli', 'output', 'dist-upload', '.next', '.vite', 'coverage', 'submission', 'scripts', '备份']);
-const EXCLUDED_NAMES = new Set(['.DS_Store', 'npm-debug.log', 'yarn-error.log']);
+const EXCLUDED_NAMES = new Set(['.DS_Store', 'npm-debug.log', 'yarn-error.log', 'PROJECT_MEMORY.md']);
 const EXCLUDED_EXTS = new Set(['.log']);
 
 function shouldSkip(rel) {
