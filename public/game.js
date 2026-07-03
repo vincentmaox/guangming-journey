@@ -885,7 +885,11 @@ const Game = {
       battle.log.push(`${current.name} 被眩晕，跳过回合！`);
       battle.turn = (battle.turn + 1) % battle.units.length;
       if (battle.turn === 0) battle.turnCount++;
-      setTimeout(() => this.soloNextTurn(), 800);
+      current.hasActed = true;
+      setTimeout(() => {
+        try { this.soloNextTurn(); }
+        catch (e) { console.error('[soloNextTurn] stun skip error:', e); battle._animLock = false; this.soloNextTurn(); }
+      }, 800);
       this.updateBattle();
       return;
     }
@@ -896,8 +900,28 @@ const Game = {
     if (!current.isPlayer) battle.combo = 0;
 
     if (!current.isPlayer) {
-      // 敌人AI
-      setTimeout(() => this.soloEnemyAI(), 1000 / SettingsSystem.data.battleSpeed);
+      // 敌人AI - 包裹try-catch防止异常导致卡死
+      setTimeout(() => {
+        try { this.soloEnemyAI(); }
+        catch (e) {
+          console.error('[soloEnemyAI] AI error, fallback to attack:', e);
+          // 异常恢复：强制对最低血量玩家执行普攻
+          try {
+            const players = battle.units.filter(u => u.isPlayer && u.hp > 0);
+            if (players.length > 0) {
+              const target = players.reduce((a, b) => (a.hp / a.maxHp < b.hp / b.maxHp ? a : b));
+              this.soloPerformAction(current.id, { type: 'attack', targetId: target.id });
+              return;
+            }
+          } catch (e2) { console.error('[soloEnemyAI] fallback also failed:', e2); }
+          // 最终兜底：释放锁并推进回合
+          battle._animLock = false;
+          battle.pendingAction = null;
+          battle.turn = (battle.turn + 1) % battle.units.length;
+          this.updateBattle();
+          setTimeout(() => this.soloNextTurn(), 500);
+        }
+      }, 1000 / SettingsSystem.data.battleSpeed);
     }
 
     this.updateBattle();
@@ -949,14 +973,60 @@ const Game = {
     const d = document.createElement('div');
     d.className = `effect-${animName}`;
     d.style.left = x + 'px'; d.style.top = y + 'px';
-    d.style.transform = 'translate(-50%,-50%)';
-    // 特殊特效内容
-    if (animName === 'critical') d.textContent = '暴击!';
-    else if (animName === 'throwing-star') d.textContent = '★';
-    else if (animName === 'virus') d.textContent = '01010';
-    else if (animName === 'food-feast') d.textContent = '🍗';
-    else if (animName === 'stun-sweet') { d.textContent = '💫'; d.style.fontSize = '2.5rem'; }
-    else if (animName === 'laser-beam' || animName === 'laser') {
+    // 有专属CSS的特效列表（这些使用自己的动画，不应用通用emoji动画）
+    const dedicatedEffects = new Set([
+      'explosion', 'rainbow-heal', 'rainbow_heal', 'shield', 'virus', 'revive',
+      'milk-splash', 'milk_splash', 'earth-smash', 'earth_smash', 'food-feast', 'food_feast',
+      'throwing-star', 'throwing_star', 'critical', 'laser', 'laser-beam', 'laser_beam',
+      'ink-splash', 'ink_splash', 'rock-smash', 'rock_smash', 'vine-bind', 'vine_bind',
+      'stun', 'buff-up', 'buff_up', 'debuff-down', 'debuff_down', 'speed-up', 'speed_up',
+      'ancestor-wrath', 'ancestor_wrath', 'spirit-heal', 'spirit_heal', 'imprison',
+      'defense-up', 'defense_up', 'stun-sweet', 'stun_sweet',
+      'aoe-charge', 'aoe-wave', 'crit-flash', 'damage-number', 'ultimate-overlay'
+    ]);
+    const isDedicated = dedicatedEffects.has(animName);
+    // 没有专属CSS的特效使用通用emoji动画类
+    if (!isDedicated) {
+      d.classList.add('effect-emoji');
+    } else {
+      // 有专属CSS的特效保留居中transform（CSS动画会覆盖它，但保持视觉一致性）
+      d.style.transform = 'translate(-50%,-50%)';
+    }
+    // 特殊特效内容 - 统一处理下划线和连字符版本
+    const animEmojiMap = {
+      'critical': '暴击!',
+      'throwing-star': '★', 'throwing_star': '★',
+      'virus': '01010',
+      'food-feast': '🍗', 'food_feast': '🍗',
+      'stun-sweet': '💫', 'stun_sweet': '💫',
+      'buff-up': '⚔️↑', 'buff_up': '⚔️↑',
+      'defense-up': '🛡️↑', 'defense_up': '🛡️↑',
+      'speed-up': '⚡↑', 'speed_up': '⚡↑',
+      'rainbow-heal': '💚', 'rainbow_heal': '💚',
+      'chain-reaction': '⚛️', 'chain_reaction': '⚛️',
+      'explosion': '💥',
+      'nuclear-burst': '☢️', 'nuclear_burst': '☢️',
+      'ddos-attack': '🌐', 'ddos_attack': '🌐',
+      'skynet-awaken': '🤖', 'skynet_awaken': '🤖',
+      'water-wave': '🌊', 'water_wave': '🌊',
+      'earthquake': '🌋',
+      'ancient-tree': '🌳', 'ancient_tree': '🌳',
+      'inferno': '🔥',
+      'feast-ultimate': '🦢', 'feast_ultimate': '🦢',
+      'lychee-rain': '🍒', 'lychee_rain': '🍒',
+      'critical-hit': '💕', 'critical_hit': '💕',
+      'shadow-assassin': '🗡️', 'shadow_assassin': '🗡️',
+      'milk-tsunami': '🥛', 'milk_tsunami': '🥛',
+      'cow-king': '🐄', 'cow_king': '🐄',
+      'star-miracle': '⭐', 'star_miracle': '⭐',
+      'spirit-heal': '✨', 'spirit_heal': '✨',
+      'shield': '🛡️',
+      'revive': '✨'
+    };
+    const emoji = animEmojiMap[animName];
+    const isBeam = (animName === 'laser-beam' || animName === 'laser' || animName === 'laser_beam');
+    if (isBeam) {
+      // 激光特效（laser-beam/laser）特殊处理
       const atkEl = document.querySelector('.battle-unit.attacking') || this._unitEl(opts.fromId);
       if (atkEl) {
         const ac = this._unitCenter(atkEl, layer);
@@ -965,10 +1035,14 @@ const Game = {
         d.style.width = dist+'px'; d.style.left = ac.x+'px'; d.style.top = ac.y+'px';
         d.style.transform = `rotate(${ang}deg)`; d.style.transformOrigin = 'left center';
       }
+    } else if (emoji) {
+      d.textContent = emoji;
+      if (animName === 'stun-sweet' || animName === 'stun_sweet') d.style.fontSize = '2.5rem';
+    } else if (!isDedicated) {
+      // 未知anim名，显示通用特效
+      d.textContent = '✨';
+      d.style.fontSize = '1.5rem';
     }
-    else if (animName === 'buff-up') d.textContent = '⚔️↑';
-    else if (animName === 'defense-up') d.textContent = '🛡️↑';
-    else if (animName === 'speed-up') d.textContent = '⚡↑';
     layer.appendChild(d);
     setTimeout(() => d.remove(), 1500);
   },
@@ -1394,9 +1468,11 @@ const Game = {
     // 2. 280ms后（冲刺到目标位置时）播放受击+伤害数字
     let comboHit = false;
     setTimeout(() => {
+      try {
       animEvents.forEach((ev, i) => {
         const delay = i * 80;
         setTimeout(() => {
+          try {
           if (ev.kind === 'damage') {
             this._flashHit(ev.targetId);
             let dtype = 'damage';
@@ -1431,13 +1507,15 @@ const Game = {
           } else if (ev.kind === 'heal') {
             this._flashGlow(ev.targetId, '6bcb77');
             this._floatNum(ev.targetId, ev.amount, 'heal');
-            if (skillAnim === 'rainbow-heal' || skillAnim === 'food-feast' || skillAnim === 'revive' || skillAnim === 'spirit_heal' || skillAnim === 'star_miracle') {
+            // 统一处理下划线和连字符的anim名称
+            const healAnims = ['rainbow-heal','rainbow_heal','food-feast','food_feast','revive','spirit_heal','spirit-heal','star_miracle','star-miracle'];
+            if (healAnims.includes(skillAnim)) {
               this._spawnEffect(skillAnim, ev.targetId);
             } else {
               this._spawnEffect('rainbow-heal', ev.targetId);
             }
             // 复活特效额外处理
-            if (skillAnim === 'revive' || skillAnim === 'star_miracle') {
+            if (skillAnim === 'revive' || skillAnim === 'star_miracle' || skillAnim === 'star-miracle') {
               const revived = battle.units.find(u => u.id === ev.targetId);
               if (revived) {
                 const el = this._unitEl(ev.targetId);
@@ -1459,18 +1537,28 @@ const Game = {
             this._dodgeEffect(ev.targetId);
             battle.combo = 0;
           }
+          } catch (innerErr) {
+            console.error('[soloPerformAction] Anim event error:', innerErr, ev);
+          }
         }, delay);
       });
       // 播放Boss变身公告
       if (battle.transformations && battle.transformations.length > 0) {
         setTimeout(() => {
+          try {
           battle.transformations.forEach((t, i) => {
             setTimeout(() => {
+              try {
               this._battleAnnounce(t.announce || '变身！', t.color || '#ff6b6b');
               this._playTransformEffect(t.unitId, t.appearance, t.phase);
+              } catch (te) { console.error('[soloPerformAction] Transform announce error:', te); }
             }, i * 400);
           });
+          } catch (tErr) { console.error('[soloPerformAction] Transform loop error:', tErr); }
         }, animEvents.length * 80 + 200);
+      }
+      } catch (animErr) {
+        console.error('[soloPerformAction] Animation main loop error:', animErr);
       }
     }, 280);
 
@@ -1597,7 +1685,11 @@ const Game = {
     if (skill.type === 'dmg') {
       if (skill.target === 'allEnemy') {
         const targets = getEnemyUnits();
-        for (const t of targets) dealDmg(t, skill.multiplier, skill.critBonus || 0, { alwaysCrit: skill.alwaysCrit });
+        for (const t of targets) dealDmg(t, skill.multiplier, skill.critBonus || 0, {
+          stunChance: skill.stunChance, stunTurns: skill.stunTurns,
+          alwaysCrit: skill.alwaysCrit,
+          debuff: skill.debuff, stat: skill.stat, debuffValue: skill.value, debuffTurns: skill.turns
+        });
       } else {
         const t = battle.units.find(u => u.id === targetId);
         dealDmg(t, skill.multiplier, skill.critBonus || 0, { stunChance: skill.stunChance, stunTurns: skill.stunTurns, alwaysCrit: skill.alwaysCrit, debuff: skill.debuff, stat: skill.stat, debuffValue: skill.value, debuffTurns: skill.turns });

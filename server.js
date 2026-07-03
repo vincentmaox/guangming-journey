@@ -485,13 +485,20 @@ function startTurn(room) {
   }
   const current = battle.units[battle.turn];
   if (!current || current.hp <= 0) return;
+  // 先检查眩晕（在tick之前），修复stun turns:1无效的off-by-one问题
+  const isStunned = current.debuffs?.some(d => d.type === 'stun');
+  // MP回复和buff/debuff递减
   tickBuffsDebuffs(current);
   current.mp = Math.min(current.maxMp, current.mp + Math.max(1, Math.round(current.maxMp * 0.1)));
-  if (current.debuffs?.some(d => d.type === 'stun')) {
+  if (isStunned) {
+    current.hasActed = true;
     battle.log.push(`${current.name} 被眩晕，跳过回合！`);
     battle.turn = (battle.turn + 1) % battle.units.length;
     if (battle.turn === 0) battle.turnCount++;
-    startTurn(room); return;
+    if (room.turnTimer) clearTimeout(room.turnTimer);
+    room.turnTimer = setTimeout(() => startTurn(room), 800);
+    emit(room);
+    return;
   }
   battle.pendingAction = { unitId: current.id, isPlayer: current.isPlayer, ownerId: current.ownerId };
   if (!current.isPlayer) {
@@ -606,12 +613,15 @@ function performAction(room, unitId, action) {
     }
     if (skill) {
       const mpCost = isUltimate ? 0 : skill.mp;
-      if (unit.mp >= mpCost) {
+      // 必杀技需要满怒气
+      const rageOk = !isUltimate || (unit.rage >= (unit.maxRage || 100));
+      if (unit.mp >= mpCost && rageOk) {
         unit.mp -= mpCost;
         // 必杀技使用后怒气清零
         if (isUltimate) unit.rage = 0;
         logMsg = executeSkill(battle, unit, skill, action.targetId, isUltimate);
       }
+      else if (!rageOk) logMsg = `${unit.name} 怒气不足，无法释放必杀！`;
       else logMsg = `${unit.name} 技能释放失败！`;
     }
   } else if (action.type === 'defend') {
@@ -703,7 +713,12 @@ function executeSkill(battle, unit, skill, targetId, isUltimate = false) {
   if (skill.type === 'dmg') {
     if (skill.target === 'allEnemy') {
       const targets = getEnemyUnits();
-      for (const t of targets) { dealDamageToTarget(t, skill.multiplier, skill.critBonus || 0, { alwaysCrit: skill.alwaysCrit, debuff: skill.debuff, stat: skill.stat, debuffValue: skill.value, debuffTurns: skill.turns }); }
+      for (const t of targets) {
+        dealDamageToTarget(t, skill.multiplier, skill.critBonus || 0, {
+          stunChance: skill.stunChance, stunTurns: skill.stunTurns, alwaysCrit: skill.alwaysCrit,
+          debuff: skill.debuff, stat: skill.stat, debuffValue: skill.value, debuffTurns: skill.turns
+        });
+      }
     } else {
       const t = battle.units.find(u => u.id === targetId);
       dealDamageToTarget(t, skill.multiplier, skill.critBonus || 0, {
@@ -969,6 +984,8 @@ io.on('connection', (socket) => {
     const li = Number(payload.levelIndex);
     if (!LEVELS[li]) return ack({ ok: false, error: '关卡不存在' });
     if (li > 0 && !room.clearedLevels.has(li - 1)) return ack({ ok: false, error: '需要先通关前置关卡' });
+    // 清除旧定时器防止泄漏
+    if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
     room.levelIndex = li; room.phase = 'battle'; initBattle(room, li); ack({ ok: true });
   });
 
@@ -1024,6 +1041,7 @@ io.on('connection', (socket) => {
     const room = getRoom(socket);
     if (!room) return ack({ ok: false, error: '尚未加入房间' });
     if (room.hostId !== socket.id) return ack({ ok: false, error: '只有房主可以操作' });
+    if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
     room.phase = 'map'; room.battle = null; ack({ ok: true }); emit(room);
   });
 
@@ -1031,6 +1049,7 @@ io.on('connection', (socket) => {
     const room = getRoom(socket);
     if (!room) return ack({ ok: false, error: '尚未加入房间' });
     if (room.hostId !== socket.id) return ack({ ok: false, error: '只有房主可以操作' });
+    if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
     for (const [, hero] of room.heroes) if (hero.hp <= 0) hero.hp = Math.round(hero.maxHp * 0.5);
     room.phase = 'battle'; initBattle(room, room.levelIndex); ack({ ok: true });
   });
@@ -1038,6 +1057,7 @@ io.on('connection', (socket) => {
   socket.on('resetGame', (_p = {}, ack = () => {}) => {
     const room = getRoom(socket);
     if (!room) return ack({ ok: false, error: '尚未加入房间' });
+    if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
     room.phase = 'lobby'; room.battle = null; room.clearedLevels.clear(); room.levelIndex = 0; room.heroes.clear();
     for (const p of room.players.values()) { p.ready = false; p.heroId = null; }
     for (const [pid] of room.players) initPlayerData(room, pid);
