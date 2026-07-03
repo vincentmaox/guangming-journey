@@ -26,6 +26,16 @@ function getElementMultiplier(a, d) {
 }
 
 const HEROES = [
+  { id: 'libao', name: '荔宝', role: '影侠', element: 'wood', hp: 80, maxHp: 80, mp: 90, maxMp: 90, atk: 52, def: 14, spd: 36,
+    img: 'assets/characters/libao-front.png',
+    ipHero: true,
+    skills: [
+      { name: '📸 瞬间快门', mp: 22, type: 'dmg', multiplier: 2.2, target: 'single', desc: '按下快门精准捕捉敌人破绽，对单个敌人造成220%伤害', anim: 'throwing_star' },
+      { name: '🍒 荔影快门雨', mp: 32, type: 'dmg', multiplier: 1.4, critBonus: 0.2, target: 'allEnemy', desc: '连续快门抓拍漫天荔影，全体敌人140%伤害且暴击率+20%', anim: 'lychee_rain' },
+      { name: '✨ 高光时刻', mp: 28, type: 'dmg', multiplier: 1.8, critBonus: 0.35, target: 'single', desc: '捕捉战斗最佳高光瞬间，180%伤害且暴击率+35%', anim: 'critical_hit' }
+    ],
+    ultimate: { name: '🌟 千荔追光', mp: 0, type: 'dmg', multiplier: 5.0, target: 'single', desc: '【必杀】文旅小使者荔宝的追光一击，对单个敌人造成500%致命伤害（必定暴击）', anim: 'shadow_assassin', alwaysCrit: true }
+  },
   { id: 'drli', name: '李博士', role: '法师', element: 'metal', hp: 85, maxHp: 85, mp: 130, maxMp: 130, atk: 45, def: 14, spd: 20,
     img: 'assets/characters/pixel-drli.jpg',
     skills: [
@@ -79,15 +89,6 @@ const HEROES = [
       { name: '🍰 美食诱惑', mp: 22, type: 'debuff', debuff: 'stun', chance: 0.55, turns: 1, target: 'single', desc: '用烘焙美食引诱敌人，55%概率眩晕1回合', anim: 'stun_sweet' }
     ],
     ultimate: { name: '🦢 光明烧鹅·满汉全席', mp: 0, type: 'healDmgBuff', heal: 80, multiplier: 3.0, target: 'allEnemy', desc: '【必杀】端出满汉全席，全队回80HP+攻击+40%，全体敌人300%伤害', anim: 'feast_ultimate', buff: 'atkUp', stat: 'atk', value: 0.4, turns: 3 }
-  },
-  { id: 'libao', name: '荔宝', role: '刺客', element: 'wood', hp: 80, maxHp: 80, mp: 90, maxMp: 90, atk: 52, def: 14, spd: 36,
-    img: 'assets/characters/pixel-libao.jpg',
-    skills: [
-      { name: '🥋 荔枝飞镖', mp: 22, type: 'dmg', multiplier: 2.2, target: 'single', desc: '投掷爆炸荔枝，对单个敌人造成220%伤害', anim: 'throwing_star' },
-      { name: '🍒 荔枝暴雨', mp: 32, type: 'dmg', multiplier: 1.4, critBonus: 0.2, target: 'allEnemy', desc: '投掷漫天荔枝飞镖，全体敌人140%伤害且暴击率+20%', anim: 'lychee_rain' },
-      { name: '🍯 甜蜜暴击', mp: 28, type: 'dmg', multiplier: 1.8, critBonus: 0.35, target: 'single', desc: '甜蜜一击，180%伤害且暴击率+35%', anim: 'critical_hit' }
-    ],
-    ultimate: { name: '🥷 影·千荔杀', mp: 0, type: 'dmg', multiplier: 5.0, target: 'single', desc: '【必杀】化身千重荔枝影，对单个敌人造成500%致命伤害（必定暴击）', anim: 'shadow_assassin', alwaysCrit: true }
   }
 ];
 
@@ -101,7 +102,7 @@ const app = express();
 app.use(express.json({ limit: '64kb' }));
 
 // ========== 游戏数据（供客户端使用） ==========
-const heroData = HEROES.map(h => ({ id: h.id, name: h.name, role: h.role, element: h.element, img: h.img, hp: h.hp, mp: h.mp, atk: h.atk, def: h.def, spd: h.spd, skills: h.skills, ultimate: h.ultimate }));
+const heroData = HEROES.map(h => ({ id: h.id, name: h.name, role: h.role, element: h.element, img: h.img, ipHero: !!h.ipHero, hp: h.hp, mp: h.mp, atk: h.atk, def: h.def, spd: h.spd, skills: h.skills, ultimate: h.ultimate }));
 const levelData = LEVELS.map(l => ({ id: l.id, name: l.name, index: l.index, description: l.description, background: l.background, bgm: l.bgm, reward: l.reward, enemies: l.enemies }));
 
 // ========== 计算文件hash用于缓存清除 ==========
@@ -895,7 +896,7 @@ function publicRoom(room) {
       const pd = room.playerData.get(p.id);
       return { id: p.id, name: p.name, ready: p.ready, heroId: p.heroId, level: pd?.level || 1, exp: pd?.exp || 0, gold: pd?.gold || 0, items: pd?.items || { hpPotion: 0, mpPotion: 0 } };
     }),
-    heroes: [...room.heroes.values()].map(h => ({ id: h.id, name: h.name, role: h.role, img: h.img, element: h.element, hp: h.hp, maxHp: h.maxHp, mp: h.mp, maxMp: h.maxMp, atk: h.atk, def: h.def, spd: h.spd, buffs: h.buffs || [], debuffs: h.debuffs || [], alive: h.hp > 0 })),
+    heroes: [...room.heroes.values()].map(h => ({ id: h.id, name: h.name, role: h.role, img: h.img, ipHero: !!h.ipHero, element: h.element, hp: h.hp, maxHp: h.maxHp, mp: h.mp, maxMp: h.maxMp, atk: h.atk, def: h.def, spd: h.spd, buffs: h.buffs || [], debuffs: h.debuffs || [], alive: h.hp > 0 })),
     clearedLevels: [...room.clearedLevels], battle: publicBattle(room.battle), publicUrl: PUBLIC_URL,
   };
 }

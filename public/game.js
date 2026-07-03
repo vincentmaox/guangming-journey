@@ -391,8 +391,10 @@ const Game = {
       const isUsed = usedHeroes.has(hero.id);
       const isSelected = this.room?.players?.find(p => p.id === this.playerId)?.heroId === hero.id;
       const elIcon = { metal: '⚜️', wood: '🌿', earth: '🪨', water: '💧', fire: '🔥' }[hero.element] || '';
+      const ipBadge = hero.ipHero ? '<div class="ip-badge">IP</div>' : '';
       return `
-        <div class="hero-card ${isSelected ? 'selected' : ''} ${isUsed ? 'used' : ''}" data-id="${hero.id}">
+        <div class="hero-card ${isSelected ? 'selected' : ''} ${isUsed ? 'used' : ''} ${hero.ipHero ? 'ip-hero' : ''}" data-id="${hero.id}">
+          ${ipBadge}
           <div class="hero-card-img"><img src="${hero.img}" alt="${hero.name}" /></div>
           <div class="hero-card-name">${hero.name}</div>
           <div class="hero-card-role">${elIcon} ${hero.role}</div>
@@ -416,17 +418,23 @@ const Game = {
 
     // 显示详情
     const detail = $('heroDetail');
+    const elIcon = { metal: '⚜️', wood: '🌿', earth: '🪨', water: '💧', fire: '🔥' }[hero.element] || '';
+    const ipTag = hero.ipHero ? '<span class="ip-tag">🌟 IP主角</span>' : '';
     detail.innerHTML = `
-      <h3>${hero.name} <span style="font-size:0.9em;color:var(--text-dim)">${hero.role}</span></h3>
+      <div class="hero-detail-head">
+        <span class="hero-detail-name">${hero.name} ${ipTag}</span>
+        <span class="hero-detail-role">${elIcon} ${hero.role}</span>
+      </div>
       <div class="hero-stats">
-        <span>❤️ ${hero.hp}</span>
-        <span>💙 ${hero.mp}</span>
-        <span>⚔️ ${hero.atk}</span>
-        <span>🛡️ ${hero.def}</span>
-        <span>⚡ ${hero.spd}</span>
+        <span>❤️${hero.hp}</span>
+        <span>💙${hero.mp}</span>
+        <span>⚔️${hero.atk}</span>
+        <span>🛡️${hero.def}</span>
+        <span>⚡${hero.spd}</span>
       </div>
       <div class="hero-skills">
-        ${hero.skills.map(s => `<div class="skill-item"><b>${s.name}</b> <span class="skill-mp">MP ${s.mp}</span><p>${s.desc}</p></div>`).join('')}
+        ${hero.skills.map(s => `<div class="skill-item"><span class="skill-name">${s.name}</span><span class="skill-mp">${s.mp}MP</span><span class="skill-brief">${s.desc}</span></div>`).join('')}
+        <div class="skill-item ultimate"><span class="skill-name">${hero.ultimate.name}</span><span class="skill-mp ultimate-mp">必杀</span><span class="skill-brief">${hero.ultimate.desc}</span></div>
       </div>
     `;
 
@@ -2011,7 +2019,7 @@ const Game = {
     const bossTag = isBoss ? `<span class="boss-tag">P${unit.phase || 1}</span>` : '';
 
     return `
-      <div class="battle-unit ${isDead ? 'dead' : ''} ${isActive ? 'active' : ''}${isRageFull ? ' rage-full' : ''}${phaseClass} ${isBoss ? 'boss-unit' : ''}" data-id="${unit.id}" data-isplayer="${unit.isPlayer}" data-element="${unit.element}">
+      <div class="battle-unit ${isDead ? 'dead' : ''} ${isActive ? 'active' : ''}${isRageFull ? ' rage-full' : ''}${phaseClass} ${isBoss ? 'boss-unit' : ''} ${unit.heroId === 'libao' ? 'ip-hero' : ''}" data-id="${unit.id}" data-isplayer="${unit.isPlayer}" data-element="${unit.element}">
         <div class="unit-img">
           <img src="${unit.img}" alt="${unit.name}" />
           ${bossCrown ? `<span class="boss-crown">${bossCrown}</span>` : ''}
